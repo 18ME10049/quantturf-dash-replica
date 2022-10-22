@@ -26,7 +26,7 @@ class BuyAndHold(base.Strategy):
 
 	def backtest():
 		cash = 10000
-		symbols = ['AAPL']
+		symbols = None
 		#start_date = '2018-01-01'
 		data_dir = "Data/"  
 
@@ -61,6 +61,6 @@ class BuyAndHold(base.Strategy):
 		
 		return pnl, results[0]    
 
-	#end of function for '['AAPL']' with capital '10000'
+	#end of function for 'None' with capital '10000'
 			
 					

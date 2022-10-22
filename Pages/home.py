@@ -124,8 +124,8 @@ def make_layout():
 					], width=10),
 					dbc.Col([
 						html.Div([
-							html.H3('Customize', style={'color': DARK_ACCENT}),
-							dbc.Card(
+							dbc.Card([
+								dbc.CardHeader('Customize', style={'color': DARK_ACCENT}),
 								dbc.CardBody([
 									dcc.DatePickerRange(
 										id='my-date-picker-range',
@@ -151,7 +151,7 @@ def make_layout():
 									html.Br(),
 									dcc.Download(id="download-center-stock-csv"),
 									dbc.Button('Download Data', id="center_stock", n_clicks=0, style = {'color': PRIMARY, 'background-color': ACCENT, "border-color":ACCENT}),
-								]),
+								]),], color=PRIMARY, style={'border-radius': 10}
 							),
 						], style={'border-radius': 10})
 					], width=2),

@@ -151,10 +151,10 @@ page = html.Div([
 			html.Br(),
 			dbc.Row([
 				dbc.Col([
-					dbc.Card(
+					dbc.Card([
+						dbc.CardHeader('Download Data', style={'color': DARK_ACCENT}),
 						dbc.CardBody([
 							# select stocks for backtest + download option
-							html.Div(html.H5('Data Download'), className='grey block2 mb-10'),
 								html.Div([
 									dcc.Dropdown(
 										id='symbols',
@@ -166,12 +166,13 @@ page = html.Div([
 								html.Br(),
 
 								html.Button('Download', id='download-btn', className='eight columns u-pull-right', n_clicks=0, style={'font-size': '15px', 'font-weight': '5', 'color': PRIMARY, 'background-color': ACCENT, "border-color":ACCENT, 'border-radius': 5}),
-
-								html.Br(), 
-								html.Br(),
-
+						]),
+					], color=PRIMARY, style={'border-radius': 10}),
+					html.Br(),
+					dbc.Card([
+						dbc.CardHeader('Generate Algorithm Code', style={'color': DARK_ACCENT}),
+						dbc.CardBody([
 								# Generate code
-								html.Div(html.H5('Generate Algorithm Code'), className='black-block2 mb-10'),
 								html.Div([
 									html.Div('Algos:', className='four columns'),
 									dcc.Dropdown(id='module', options=[], className='eight columns u-pull-right')
@@ -197,12 +198,13 @@ page = html.Div([
 								html.Br(),
 
 								html.Button('Generate Code', id='save-btn', n_clicks=0, className='eight columns u-pull-right', style={'font-size': '15px', 'font-weight': '5', 'color': PRIMARY, 'background-color': ACCENT, "border-color":ACCENT, 'border-radius': 5}),
-
-								html.Br(),
-								html.Br(),
-
+						]),
+					], color=PRIMARY, style={'border-radius': 10}),
+					html.Br(),
+					dbc.Card([
+						dbc.CardHeader('Run Backtest', style={'color': DARK_ACCENT}),
+						dbc.CardBody([
 								# Run backtest
-								html.Div(html.H5('Run Backtest'), className='black-block2 mb-10'),    
 								html.Div([
 									dcc.Dropdown(id='strategy', options=[])
 									# dcc.Dropdown(
@@ -221,18 +223,29 @@ page = html.Div([
 								html.Div(id='intermediate-status', style={'display': 'none'}),
 								html.Div(id='level-log', contentEditable='True', style={'display': 'none'}),
 								dcc.Input(id='log-uid', type='text', style={'display': 'none'})
-							]), color = SECONDARY, style ={'border-radius': 10}
-						)
+							])
+					], color = PRIMARY, style ={'border-radius': 10}),
 						], width=2),
 						dbc.Col([
 							
 							html.Div([
 								dbc.Card(
 									dbc.CardBody([
-										dcc.Graph(id='charts',config={
-												'displayModeBar': False
-												}
-										)
+										dbc.Tabs(
+											[
+												dbc.Tab(dcc.Graph(id='charts',config={
+												'displayModeBar': False}), label='Backtest', className='nav-pills'),
+												# dbc.Tab(cumulative_returns_plot, label='Cumulative Returns', className='nav-pills'),
+												# dbc.Tab(annual_monthly_returns_plot, label='Annual and Monthly Returns', className='nav-pills'),
+												# dbc.Tab(rolling_sharpe_plot, label='Rolling Sharpe', className='nav-pills'),
+												# dbc.Tab(drawdown_periods_plot, label='unfinished', className='nav-pills'),
+												# dbc.Tab(drawdown_underwater_plot, label='Drawdown Underwater', className='nav-pills'),
+												# dbc.Tab(quantiles_plot, label='Scatter'),
+											],
+											id='tabs',
+											# active_tab='tab-1',
+										),
+										
 									]), color = SECONDARY, style ={'border-radius': 10}
 								),
 					]),
@@ -916,7 +929,8 @@ def register_callbacks(app):
 		return flask.send_from_directory(static_directory, file)
 
 	@app.callback(Output('module', 'options'), [Input('symbols', 'value')])
-	def update_algo_list(symbols):  
+	def update_algo_list(symbols):
+
 		all_files = os.listdir("SampleStrategies") 
 		algo_files = list(filter(lambda f: f.endswith('.py'), all_files))
 		algo_avlb = [s.rsplit( ".", 1 )[ 0 ] for s in algo_files]

@@ -29,6 +29,7 @@ import json
 # import files
 from Pages import home as eq
 import backtestView as bt_view
+from Pages import generate_code as gc
 from Pages import crypto, fx, equity_visuals, code_modal
 
 PRIMARY = '#FFFFFF'
@@ -87,6 +88,7 @@ server.wsgi_app = WhiteNoise(server.wsgi_app, root='Static/')
 eq.register_callbacks(app)
 equity_visuals.register_callbacks(app)
 bt_view.register_callbacks(app)
+gc.register_callbacks(app)
 
 # the style arguments for the sidebar. We use position:fixed and a fixed width
 SIDEBAR_STYLE = {
@@ -230,6 +232,7 @@ sidebar = html.Div(
                 #                 , menu_variant='dark', nav=True, group=True
                 # ),
                 dbc.NavLink('Download Data', href='/download-data', id='download-data-link', className='nav-pills'),
+                dbc.NavLink('Generate Code', href='/generate-code', id='generate-code-link', className='nav-pills'),
                 dbc.NavLink('Backtest', href='/backtest', id='backtest-link', className='nav-pills'),
                 dbc.NavLink('Contact Us', href='/contact-us', id='contact-us-link', className='nav-pills'),
                 # dbc.NavLink('Visualizations', href='/equity-visuals', id='equity-visuals-link', className='nav-pills'),
@@ -344,7 +347,7 @@ app.callback(
     State('modal-content', 'is_open'),
 )(toggle_modal)
 
-categories = ['download-data','contact-us', 'backtest']
+categories = ['generate-code', 'download-data','contact-us', 'backtest']
 
 
 
@@ -400,7 +403,7 @@ def toggle_sidebar(n, nclick):
 def toggle_active_links(pathname):
     if pathname == '/':
         # Treat page 1 as the homepage / index
-        return True, False, False
+        return True, False, False, False
     return [pathname == f'/{i}' for i in categories]
 
 # # communicate with 'see code' content dictionary
@@ -414,6 +417,8 @@ def render_page_content(pathname):
         return eq.make_layout()
     elif pathname == '/backtest':
         return bt_view.make_layout()
+    elif pathname =='/generate-code':
+        return gc.make_layout()
     elif pathname == '/contact-us':
         pass
     # If the user tries to reach a different page, return a 404 message
