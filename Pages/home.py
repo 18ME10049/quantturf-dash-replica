@@ -77,8 +77,8 @@ tickers_dict = {'Equities': company_options_list, 'Crypto': crypto_tickers, 'FX'
 names = list(tickers_dict.keys())
 nested_options = tickers_dict[names[0]]
 
-asset_classes = ['Equities', 'Crypto', 'FX', 'Commodities', 'Fixed Income']
-properties = ['Open', 'Low', 'High', 'Volume']
+asset_classes = ['Equities', 'Crypto', 'FX']
+properties = ['All', 'Open', 'High', 'Low', 'Close', 'Volume']
 
 
 
@@ -147,7 +147,7 @@ def make_layout():
 									html.Br(),
 									dcc.Dropdown(value='AAPL', id='selected-symbol', style=SEARCH_STYLE, clearable=False, placeholder='Select Ticker...'),
 									html.Br(),
-									dcc.Dropdown(properties, 'Open', id='selected-property', style=SEARCH_STYLE, clearable=False, placeholder='Select Property...'),
+									dcc.Dropdown(properties, 'All', id='selected-property', style=SEARCH_STYLE, clearable=False, placeholder='Select Property...'),
 									html.Br(),
 									dcc.Download(id="download-center-stock-csv"),
 									dbc.Button('Download Data', id="center_stock", n_clicks=0, style = {'color': PRIMARY, 'background-color': ACCENT, "border-color":ACCENT}),
@@ -244,7 +244,7 @@ def beautify_plotly(fig):
 
 
 # create main equity plot
-def centerStock(symbol, start, end):
+def centerStock(symbol, start, end, metric):
 
 	from plotly.subplots import make_subplots
 
@@ -277,20 +277,46 @@ def centerStock(symbol, start, end):
 	fig = make_subplots(specs=[[{'secondary_y': True}]])
 
 	# Adding line plot with close prices and bar plot with trading volume
-	fig.add_trace(go.Scatter(x=df.index, y=df['Close'], name=symbol+' Close'), secondary_y=False)
-	fig.add_trace(go.Bar(x=df.index, y=df['Volume'], name='Volume', opacity=0.5, marker_color=['black'], marker_colorscale='Rainbow',), secondary_y=True)
+	# fig.add_trace(go.Scatter(x=df.index, y=df['Close'], name=symbol+' Close'), secondary_y=False)
 
-	fig.add_trace(go.Candlestick(x=df.index,
-					open=df['Open'],
-					high=df['High'],
-					low=df['Low'],
-					close=df['Close'], name = 'market data'))
+	if metric == 'All': 
+		fig.add_trace(go.Candlestick(x=df.index,
+						open=df['Open'],
+						high=df['High'],
+						low=df['Low'],
+						close=df['Close'], name = 'market data'))
+	elif metric == 'Open':
+		fig.add_trace(go.Scatter(x=df.index, 
+							y=df['Open'], 
+							opacity=0.7, 
+							line=dict(color='#98C1D9', width=2), 
+							name='Open'))
+	elif metric == 'High':
+		fig.add_trace(go.Scatter(x=df.index, 
+							y=df['High'], 
+							opacity=0.7, 
+							line=dict(color='#98C1D9', width=2), 
+							name='High'))
+	elif metric == 'Low':
+		fig.add_trace(go.Scatter(x=df.index, 
+							y=df['Low'], 
+							opacity=0.7, 
+							line=dict(color='#98C1D9', width=2), 
+							name='Low'))
+	elif metric == 'Close':
+		fig.add_trace(go.Scatter(x=df.index, 
+							y=df['Close'], 
+							opacity=0.7, 
+							line=dict(color='#98C1D9', width=2), 
+							name='Close'))
+	elif metric == 'Volume':
+		fig.add_trace(go.Bar(x=df.index, y=df['Volume'], name='Volume', opacity=0.5, marker_color=['black'], marker_colorscale='Rainbow',), secondary_y=True)
 
 	# Add 5-day Moving Average Trace
 	fig.add_trace(go.Scatter(x=df.index, 
 							y=df['MA5'], 
 							opacity=0.7, 
-							line=dict(color='blue', width=2), 
+							line=dict(color='brown', width=2), 
 							name='MA 5'))
 	# Add 20-day Moving Average Trace
 	fig.add_trace(go.Scatter(x=df.index, 
@@ -345,9 +371,9 @@ def register_callbacks(app):
 		return dcc.send_data_frame(df.to_csv, "finailab_data.csv")
 
 	@app.callback(Output('center-stock', 'figure'), [Input('selected-symbol', 'value'),Input('my-date-picker-range', 'start_date'),
-		Input('my-date-picker-range', 'end_date')])
-	def send_to_graph(symbol, start, end):
-		return centerStock(symbol, start, end)
+		Input('my-date-picker-range', 'end_date'), Input('selected-property', 'value')])
+	def send_to_graph(symbol, start, end, metric):
+		return centerStock(symbol, start, end, metric)
 
 	# adjust dropdown tickers for a given tab
 	@app.callback(Output('selected-symbol', 'options'),
