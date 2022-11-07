@@ -92,6 +92,8 @@ most_recent = today - timedlt1
 offset = max(1, (today.weekday() + 7) % 7 - 3)
 timedlt1 = timedelta(offset)
 
+yesterday = today - timedelta(1)
+
 second_most_recent = today - timedlt1
 
 def make_layout():
@@ -131,9 +133,9 @@ def make_layout():
 										id='my-date-picker-range',
 										min_date_allowed=date(2000, 8, 5),
 										# max_date_allowed=date(2017, 9, 19),
-										start_date=second_most_recent,
+										start_date=yesterday,
 										# initial_visible_month=date(2022, 1, 1),
-										end_date=most_recent,
+										end_date=today,
 										style={
 											'background-color': PRIMARY,
 											'color': 'black',
