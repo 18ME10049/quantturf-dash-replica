@@ -68,7 +68,8 @@ multiprocess==0.70.13
 multitasking==0.0.10
 nbformat==5.4.0
 nest-asyncio==1.5.5
-numpy==1.22.4
+# numpy==1.22.4
+numpy
 packaging==21.3
 pandas==1.4.2
 pandas-datareader==0.10.0
