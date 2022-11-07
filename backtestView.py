@@ -40,7 +40,7 @@ import plotly.graph_objs as go
 
 from re import S
 import re
-from turtle import onclick
+# from turtle import onclick
 import redis
 import flask
 
