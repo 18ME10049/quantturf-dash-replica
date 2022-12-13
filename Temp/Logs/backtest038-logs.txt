@@ -1,0 +1,2 @@
+DEBUG - start
+ERROR - Error in starting a backtest: inconsistent use of tabs and spaces in indentation (MyStrategy.py, line 27)

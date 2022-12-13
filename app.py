@@ -30,12 +30,14 @@ import json
 from Pages import home as eq
 import backtestView as bt_view
 from Pages import generate_code as gc
+from Pages import broker_details_page as brokerDetails
 from Pages import crypto, fx, equity_visuals, code_modal
+from Pages import live_trade as liveTrade
 
 PRIMARY = '#FFFFFF'
-SECONDARY = '#FFFFFF'
-ACCENT = '#98C1D9'
-SIDEBAR = '#F7F7F7'
+SECONDARY = '#242324'#'#FFFFFF'
+ACCENT = '#242324'#98C1D9'
+SIDEBAR = '#FAF18F'#F7F7F7'
 
 
 
@@ -89,6 +91,7 @@ eq.register_callbacks(app)
 equity_visuals.register_callbacks(app)
 bt_view.register_callbacks(app)
 gc.register_callbacks(app)
+brokerDetails.register_callbacks(app)
 
 # the style arguments for the sidebar. We use position:fixed and a fixed width
 SIDEBAR_STYLE = {
@@ -231,10 +234,12 @@ sidebar = html.Div(
                 #                                                 ]
                 #                 , menu_variant='dark', nav=True, group=True
                 # ),
-                dbc.NavLink('Download Data', href='/download-data', id='download-data-link', className='nav-pills'),
-                dbc.NavLink('Generate Code', href='/generate-code', id='generate-code-link', className='nav-pills'),
-                dbc.NavLink('Backtest', href='/backtest', id='backtest-link', className='nav-pills'),
-                dbc.NavLink('Contact Us', href='/contact-us', id='contact-us-link', className='nav-pills'),
+                dbc.NavLink('Broker Setup', href='/broker-setup', id='broker-setup-link', style={'color': '#242324'}),
+                dbc.NavLink('Download Data', href='/download-data', id='download-data-link', style={'color': '#242324'}),
+                dbc.NavLink('Generate Code', href='/generate-code', id='generate-code-link', style={'color': '#242324'}),
+                dbc.NavLink('Backtest', href='/backtest', id='backtest-link' ,style={'color': '#242324'}),
+                dbc.NavLink('Live Trade', href='/live-trade', id='live-trade-link', style={'color': '#242324'}),
+                dbc.NavLink('Contact Us', href='/contact-us', id='contact-us-link', style={'color': '#242324'}),
                 # dbc.NavLink('Visualizations', href='/equity-visuals', id='equity-visuals-link', className='nav-pills'),
                 # dbc.NavLink('Crypto', href='/crypto', id='crypto-link', className='nav-pills'),
                 # dbc.NavLink('FX', href='/FX', id='FX-link', className='nav-pills'),
@@ -347,7 +352,7 @@ app.callback(
     State('modal-content', 'is_open'),
 )(toggle_modal)
 
-categories = ['generate-code', 'download-data','contact-us', 'backtest']
+categories = ['download-data','generate-code','contact-us', 'backtest','live-trade', 'broker-setup']
 
 
 
@@ -403,7 +408,7 @@ def toggle_sidebar(n, nclick):
 def toggle_active_links(pathname):
     if pathname == '/':
         # Treat page 1 as the homepage / index
-        return True, False, False, False
+        return True, False, False, False, False, False
     return [pathname == f'/{i}' for i in categories]
 
 # # communicate with 'see code' content dictionary
@@ -419,6 +424,10 @@ def render_page_content(pathname):
         return bt_view.make_layout()
     elif pathname =='/generate-code':
         return gc.make_layout()
+    elif pathname =='/broker-setup':
+        return brokerDetails.make_layout()
+    elif pathname == '/live-trade':
+        return liveTrade.make_layout()
     elif pathname == '/contact-us':
         pass
     # If the user tries to reach a different page, return a 404 message

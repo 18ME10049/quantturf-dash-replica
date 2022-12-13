@@ -1,0 +1,2 @@
+DEBUG - start
+ERROR - Error in starting a backtest: module 'MyStrategies.BaseStrategy' has no attribute 'backtest'

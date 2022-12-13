@@ -21,9 +21,9 @@ import dash.dependencies
 import pyfolio as pf
 import matplotlib.pyplot as plt
 plt.switch_backend('Agg')
-import empyrical
-import quantstats as qs
-from quantstats import stats
+#import empyrical
+#import quantstats as qs
+#from quantstats import stats
 from pandas_datareader import data as web
 from plotly.subplots import make_subplots
 
@@ -37,12 +37,40 @@ import pandas as pd
 import yfinance as yf
 import yahoo_fin.stock_info as si
 
+#Alpaca package
+import alpaca_trade_api as tradeapi
+from alpaca_trade_api.rest import TimeFrame
+
+with open('G:\Quanturf\quantturf-dash-replica\Alpaca_input_values.json') as infile:
+    data = json.load(infile)
+
+APCA_API_KEY_ID = data['ALPACA_KEY']#"PKWW7CAGNXC9BD8C1UEW"
+APCA_API_SECRET_ID = data['ALPACA_SECRET']
+BASE_URL = "https://paper-api.alpaca.markets"
+
 #Graphing/Visualization
 import plotly.graph_objs as go
 
 from Pages import fx
 
+#Use ALPACA Client
+api = tradeapi.REST(key_id = APCA_API_KEY_ID, secret_key = APCA_API_SECRET_ID, base_url = BASE_URL)
+# Get list of all the Symbols Available in Alpaca
+result = api.list_assets(status='active')
+result_df = pd.DataFrame(columns = ['class','exchange','symbol'])
+class_list = []
+exchange_list = []
+symbol_list = []
 
+for res in result:
+    #print(res.class)
+    #class_list.append(res.class)
+    exchange_list.append(res.exchange)
+    symbol_list.append(res.symbol)
+
+result_df = pd.DataFrame({ 'exchange': exchange_list, 'Symbol': symbol_list})
+symbolList = result_df.Symbol.unique().tolist()
+exchangeList = result_df.exchange.unique().tolist()
 
 # global yf_data
 # yf_data = pd.DataFrame()
@@ -66,11 +94,12 @@ country_lst = list(fx_countries.columns[2:])
 equity_df = pd.DataFrame()
 
 # get all companies from json file
-with open('Static/Dropdown Data/companies.json', 'r') as read_file:
-	company_list = json.load(read_file)
-company_options_list = []
-for company in company_list:
-    company_options_list.append(company)
+# with open('Static/Dropdown Data/companies.json', 'r') as read_file:
+# 	company_list = json.load(read_file)
+# company_options_list = []
+# for company in company_list:
+#     company_options_list.append(company)
+company_options_list = symbolList
 
 # set asset specific drowdown values
 tickers_dict = {'Equities': company_options_list, 'Crypto': crypto_tickers, 'FX': country_lst, 'Fixed Income': [], 'Commodities': [], 'Sentiment': []}
@@ -78,7 +107,8 @@ names = list(tickers_dict.keys())
 nested_options = tickers_dict[names[0]]
 
 asset_classes = ['Equities', 'Crypto', 'FX']
-properties = ['All', 'Open', 'High', 'Low', 'Close', 'Volume']
+# properties = ['All', 'Open', 'High', 'Low', 'Close', 'Volume']
+properties = ['Day', 'Minute', 'Hour']
 
 
 
@@ -95,6 +125,24 @@ timedlt1 = timedelta(offset)
 yesterday = today - timedelta(1)
 
 second_most_recent = today - timedlt1
+previous_2 = today-timedelta(days=3)
+previous_1 = today-timedelta(days=2)
+
+weekday = today.weekday()
+
+if weekday == 0:
+	previous_2 = today-timedelta(days=4)
+	previous_1 = today-timedelta(days=3)
+if weekday == 1:
+	previous_2 = today-timedelta(days=4)
+	previous_1 = today-timedelta(days=1)
+if weekday == 5:
+	previous_2 = today-timedelta(days=2)
+	previous_1 = today-timedelta(days=1)
+if weekday == 6:
+	previous_2 = today-timedelta(days=3)
+	previous_1 = today-timedelta(days=2)
+
 
 def make_layout():
 
@@ -133,9 +181,9 @@ def make_layout():
 										id='my-date-picker-range',
 										min_date_allowed=date(2000, 8, 5),
 										# max_date_allowed=date(2017, 9, 19),
-										start_date=yesterday,
+										start_date=previous_2,
 										# initial_visible_month=date(2022, 1, 1),
-										end_date=today,
+										end_date=previous_1,
 										style={
 											'background-color': PRIMARY,
 											'color': 'black',
@@ -147,12 +195,12 @@ def make_layout():
 									html.Br(),
 									dcc.Dropdown(asset_classes, 'Equities', id='selected-asset-class', style=SEARCH_STYLE, clearable=False, placeholder='Select Asset Class...'),
 									html.Br(),
-									dcc.Dropdown(value='AAPL', id='selected-symbol', style=SEARCH_STYLE, clearable=False, placeholder='Select Ticker...'),
+									dcc.Dropdown(value='AMZN', id='selected-symbol', style=SEARCH_STYLE, clearable=False, placeholder='Select Ticker...'),
 									html.Br(),
-									dcc.Dropdown(properties, 'All', id='selected-property', style=SEARCH_STYLE, clearable=False, placeholder='Select Property...'),
+									dcc.Dropdown(properties, 'Day', id='selected-property', style=SEARCH_STYLE, clearable=False, placeholder='Select Property...'),
 									html.Br(),
 									dcc.Download(id="download-center-stock-csv"),
-									dbc.Button('Download Data', id="center_stock", n_clicks=0, style = {'color': PRIMARY, 'background-color': ACCENT, "border-color":ACCENT}),
+									dbc.Button('Download Data', id="center_stock", n_clicks=0, style={'background-color': '#242324', 'color': '#FAF18F', "border-color":'#242324'}),
 								]),], color=PRIMARY, style={'border-radius': 10}
 							),
 						], style={'border-radius': 10})
@@ -249,26 +297,38 @@ def beautify_plotly(fig):
 def centerStock(symbol, start, end, metric):
 
 	from plotly.subplots import make_subplots
-
+ 
 	# Override Yahoo Finance 
 	yf.pdr_override()
 
 	delta = dt.datetime.strptime(end, '%Y-%m-%d') - dt.datetime.strptime(start, '%Y-%m-%d')
-	if delta.days < 30:
-		# Retrieve stock data frame (df) from yfinance API at an interval of 1m 
-		df = yf.download(tickers=symbol,period='1d',interval='1m', start=start,end=end)
-	else:
-		df = yf.download(tickers=symbol,period='1d',start=start,end=end)
-	
+	# if delta.days < 30:
+	# 	# Retrieve stock data frame (df) from yfinance API at an interval of 1m 
+	# 	df = yf.download(tickers=symbol,period='1d',interval='1m', start=start,end=end)
+	# else:
+	# 	df = yf.download(tickers=symbol,period='1d',start=start,end=end)
+	timeFrame = TimeFrame.Day
+	if metric == 'Minute':
+		timeFrame = TimeFrame.Minute
+	elif metric == 'Hour':
+		timeFrame = TimeFrame.Hour
+	df = api.get_bars( symbol=symbol , #any symbol is acceptable if it can be found in Alpaca API
+    								timeframe=timeFrame, 
+    								start=start,end=end).df
 	df.drop(df.tail(1).index,inplace=True)
 	# add_csv_to_folder(df, "center_stock")
 	df_dict['Download Data'] = df
 	# print(yf_data)
 	# df = pd.DataFrame(yf_data[symbol])
 
+	Close = 'close'
+	Open = 'open'
+	High = 'high'
+	Low = 'low'
+
 	# add Moving Averages (5day and 20day) to df 
-	df['MA5'] = df['Close'].rolling(window=5).mean()
-	df['MA20'] = df['Close'].rolling(window=20).mean()
+	df['MA5'] = df[Close].rolling(window=5).mean()
+	df['MA20'] = df[Close].rolling(window=20).mean()
 
 	# print(df)
 
@@ -281,38 +341,38 @@ def centerStock(symbol, start, end, metric):
 	# Adding line plot with close prices and bar plot with trading volume
 	# fig.add_trace(go.Scatter(x=df.index, y=df['Close'], name=symbol+' Close'), secondary_y=False)
 
-	if metric == 'All': 
-		fig.add_trace(go.Candlestick(x=df.index,
-						open=df['Open'],
-						high=df['High'],
-						low=df['Low'],
-						close=df['Close'], name = 'market data'))
-	elif metric == 'Open':
-		fig.add_trace(go.Scatter(x=df.index, 
-							y=df['Open'], 
-							opacity=0.7, 
-							line=dict(color='#98C1D9', width=2), 
-							name='Open'))
-	elif metric == 'High':
-		fig.add_trace(go.Scatter(x=df.index, 
-							y=df['High'], 
-							opacity=0.7, 
-							line=dict(color='#98C1D9', width=2), 
-							name='High'))
-	elif metric == 'Low':
-		fig.add_trace(go.Scatter(x=df.index, 
-							y=df['Low'], 
-							opacity=0.7, 
-							line=dict(color='#98C1D9', width=2), 
-							name='Low'))
-	elif metric == 'Close':
-		fig.add_trace(go.Scatter(x=df.index, 
-							y=df['Close'], 
-							opacity=0.7, 
-							line=dict(color='#98C1D9', width=2), 
-							name='Close'))
-	elif metric == 'Volume':
-		fig.add_trace(go.Bar(x=df.index, y=df['Volume'], name='Volume', opacity=0.5, marker_color=['black'], marker_colorscale='Rainbow',), secondary_y=True)
+	# if metric == 'All': 
+	fig.add_trace(go.Candlestick(x=df.index,
+					open=df[Open],
+					high=df[High],
+					low=df[Low],
+					close=df[Close], name = 'market data'))
+	# elif metric == 'Open':
+	# 	fig.add_trace(go.Scatter(x=df.index, 
+	# 						y=df['Open'], 
+	# 						opacity=0.7, 
+	# 						line=dict(color='#98C1D9', width=2), 
+	# 						name='Open'))
+	# elif metric == 'High':
+	# 	fig.add_trace(go.Scatter(x=df.index, 
+	# 						y=df['High'], 
+	# 						opacity=0.7, 
+	# 						line=dict(color='#98C1D9', width=2), 
+	# 						name='High'))
+	# elif metric == 'Low':
+	# 	fig.add_trace(go.Scatter(x=df.index, 
+	# 						y=df['Low'], 
+	# 						opacity=0.7, 
+	# 						line=dict(color='#98C1D9', width=2), 
+	# 						name='Low'))
+	# elif metric == 'Close':
+	# 	fig.add_trace(go.Scatter(x=df.index, 
+	# 						y=df['Close'], 
+	# 						opacity=0.7, 
+	# 						line=dict(color='#98C1D9', width=2), 
+	# 						name='Close'))
+	# elif metric == 'Volume':
+	# 	fig.add_trace(go.Bar(x=df.index, y=df['Volume'], name='Volume', opacity=0.5, marker_color=['black'], marker_colorscale='Rainbow',), secondary_y=True)
 
 	# Add 5-day Moving Average Trace
 	fig.add_trace(go.Scatter(x=df.index, 
