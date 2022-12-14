@@ -27,7 +27,6 @@ plt.switch_backend('Agg')
 from pandas_datareader import data as web
 from plotly.subplots import make_subplots
 
-
 # Raw Package
 import numpy as np
 import pandas as pd
@@ -41,7 +40,7 @@ import yahoo_fin.stock_info as si
 import alpaca_trade_api as tradeapi
 from alpaca_trade_api.rest import TimeFrame
 
-with open('G:\Quanturf\quantturf-dash-replica\Alpaca_input_values.json') as infile:
+with open('alpaca_input_values.json') as infile:
     data = json.load(infile)
 
 APCA_API_KEY_ID = data['ALPACA_KEY']#"PKWW7CAGNXC9BD8C1UEW"

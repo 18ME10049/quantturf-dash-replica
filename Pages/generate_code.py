@@ -13,7 +13,7 @@ import pandas as pd
 import alpaca_trade_api as tradeapi
 from alpaca_trade_api.rest import TimeFrame
 
-with open('G:\Quanturf\quantturf-dash-replica\Alpaca_input_values.json') as infile:
+with open('alpaca_input_values.json') as infile:
     data = json.load(infile)
 
 APCA_API_KEY_ID = data['ALPACA_KEY']#"PKWW7CAGNXC9BD8C1UEW"
@@ -181,23 +181,35 @@ ChooseEquityCard = dbc.Col([ dbc.Card([
 							])
 						], color=PRIMARY, style={'border-radius': 10, "width": "18rem"})], width=2)
 
+see_code = dbc.Col([
+					dbc.Card(
+							[
+								dbc.CardHeader('See Code', style={'color': DARK_ACCENT}),
+								dbc.CardBody([
+								html.Button('See BackTest Code', id='see-backtest-code', n_clicks=0, style={'font-size': '15px', 'font-weight': '7px', 'color': '#FAF18F', 'background-color': '#242324', "border-color":'#242324', 'border-radius': 5}),
+								html.Button('See Paper Code', id='see-paper-code', n_clicks=0,style={'margin-left': '20px','font-size': '15px', 'font-weight': '7px', 'color': '#FAF18F', 'background-color': '#242324', "border-color":'#242324', 'border-radius': 5}),
+							]),], color=PRIMARY, style={'border-radius': 10}
+						)
+					], width=4)
+
 def make_layout():
 
 	left_col = html.Div([
 		dbc.Card(
 			dbc.CardBody([
 				html.Br(),
-				dbc.Row([ChooseEquityCard, dbc.Col([html.Br()], width=1), ChooseAlgoCard], id='graph-container', style={'margin-bottom':'3rem'}),
-				dbc.Row([
-					paper_live_code_generate,
-					#backtest_code_generate
-				], id='graph-container', style={'margin-bottom':'30rem'})
+				dbc.Row([ChooseEquityCard, dbc.Col([html.Br()], width=1), ChooseAlgoCard]),
+				html.Br(),
+				dbc.Row([paper_live_code_generate]),
+				html.Br(),
+				dbc.Row([see_code]),
+				html.Br(),
+				html.Div(id='code-container')
 			]),
 		),
 	])
 
 	return left_col
-
 
 def register_callbacks(app):
 	# @app.server.route('{}<file>'.format(static_route))
@@ -206,6 +218,24 @@ def register_callbacks(app):
 	# 		raise Exception('"{}" is excluded from the allowed static css files'.format(file))
 	# 	static_directory = os.path.join(root_directory, 'Static')
 	# 	return flask.send_from_directory(static_directory, file)
+
+	@app.callback(Output('code-container', 'children'),[Input('see-backtest-code', 'n_clicks'), Input('see-paper-code', 'n_clicks')])
+	def display_code(n_clicks1, n_clicks2):
+		if n_clicks1%2 == 1 or n_clicks2%2 == 1:
+			if n_clicks1%2==1:
+				# Read the code from a file
+				with open('MyBacktestStrategies/MyStrategy.py', "r", encoding="utf-8") as f:
+					code = f.read()
+				# Return the code as a preformatted text element
+				return dcc.Markdown("```{}```".format(code))
+			else:
+				# Read the code from a file
+				with open('MyLiveStrategies/MyStrategy.py', "r", encoding="utf-8") as f:
+					code = f.read()
+				# Return the code as a preformatted text element
+				return dcc.Markdown("```{}```".format(code))
+		else:
+			return html.Pre()
 
     # update lago
 	@app.callback(Output('module-gc', 'options'), [Input('symbols', 'value')])

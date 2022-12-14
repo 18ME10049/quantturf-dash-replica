@@ -186,7 +186,7 @@ navbar = dbc.NavbarSimple(
         # dcc.Download(id="download-drawdown-underwater-csv"),
         # html.Br(),
         # dbc.Button('Download Data', id="center_stock", n_clicks=0, style = {'color': ACCENT, 'background-color': SIDEBAR, "border-color":ACCENT, "margin-right": "5px"}),
-        dbc.Button('See Code', id='open-modal', outline=True, className='mr-1', n_clicks=0, style = {'color': ACCENT, 'background-color': SIDEBAR, "border-color":ACCENT, "margin-right": "5px"}),  
+        #dbc.Button('See Code', id='open-modal', outline=True, className='mr-1', n_clicks=0, style = {'color': ACCENT, 'background-color': SIDEBAR, "border-color":ACCENT, "margin-right": "5px"}),  
         dbc.Modal(
             [
                 dbc.ModalHeader(dbc.ModalTitle('Python Code')),

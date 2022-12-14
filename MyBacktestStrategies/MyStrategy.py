@@ -44,6 +44,8 @@ class SmaCross1(bt.Strategy):
     def notify_order(self, order):
         print(order)
         print(f"Order notification. status {order.getstatusname()}.")
+        print(f"Order info. status {order.info}.")
+        #print(f'Order - {order.getordername()} {order.ordtypename()} {order.getstatusname()} for {order.size} shares @ ${order.price:.2f}')
 
     def stop(self):
         print('==================================================')
@@ -65,19 +67,18 @@ class SmaCross1(bt.Strategy):
             return
         # if fast crosses slow to the upside
         if not self.positionsbyname[symbol].size and self.crossover0 > 0:
-            self.buy(data=data0, size=5)  # enter long
+            self.buy(data=self.data0, size=5)  # enter long
 
         # in the market & cross to the downside
         if self.positionsbyname[symbol].size and self.crossover0 <= 0:
-            self.close(data=data0)  # close long position
+            self.close(data=self.data0)  # close long position
 
 
-if __name__ == '__main__':
+def runStrategy():
     import logging
     logging.basicConfig(format='%(asctime)s %(message)s', level=logging.INFO)
 
     cerebro = bt.Cerebro()
-    cerebro.addstrategy(SmaCross1)
 
     store = alpaca_backtrader_api.AlpacaStore(
         key_id=ALPACA_API_KEY,
@@ -103,13 +104,23 @@ if __name__ == '__main__':
         # or just alpaca_backtrader_api.AlpacaBroker()
         broker = store.getbroker()
         cerebro.setbroker(broker)
+    #cerebro.broker.setcash(100000)
     cerebro.adddata(data0)
+    cerebro.addstrategy(SmaCross1)
+
+    #add Analyzers
+    cerebro.addanalyzer(bt.analyzers.PyFolio, _name='pyfolio')
+    cerebro.addanalyzer(bt.analyzers.DrawDown, _name='drawdown')
+    cerebro.addanalyzer(bt.analyzers.SQN, _name='SQN')
+    cerebro.addanalyzer(bt.analyzers.TradeAnalyzer, _name='trades')
 
     if IS_BACKTEST:
         # backtrader broker set initial simulated cash
         cerebro.broker.setcash(10000)
 
     print('Starting Portfolio Value: {}'.format(cerebro.broker.getvalue()))
-    cerebro.run()
+    results = cerebro.run()
+    pnl = cerebro.broker.getvalue() - 10000
     print('Final Portfolio Value: {}'.format(cerebro.broker.getvalue()))
-    cerebro.plot()
+    return pnl, results[0]
+    #cerebro.plot()

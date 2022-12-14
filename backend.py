@@ -109,9 +109,9 @@ def create_ts2(strategy):
         # for k, v in params.items():
         #     params[k] = json.loads(v)
 
-        module_name = "MyStrategies."+strategy
-        module = importlib.import_module(module_name)
-        pnl, strat = module.backtest() #Check for the issues??    
+        module_name = "MyBacktestStrategies."+"MyStrategy1"
+        currentStrategy =  importlib.import_module(module_name)
+        pnl, strat = currentStrategy.runStrategy() #Check for the issues??    
         # pnl, strat = backtest.run(symbols, cash, strategy, **params)
         pyfoliozer = strat.analyzers.getbyname('pyfolio')
         returns, _, _, _ = pyfoliozer.get_pf_items()
@@ -128,42 +128,42 @@ def create_ts2(strategy):
     return result
     
 
-def create_ts(uid, module_name, strategy_name, symbols, params):
-    result = []
-    logger = logging.getLogger()
-    logger.setLevel(logging.NOTSET)
-    lfc = LogFileCreator()
-    fh = logging.FileHandler(lfc.next_file_name())
-    formatter = logging.Formatter('%(levelname)s - %(message)s')
-    fh.setFormatter(formatter)
-    fh.setLevel(logging.NOTSET)
-    logger.addHandler(fh)
-    rh = rlog.RedisHandler(channel='l' + uid)
-    logger.addHandler(rh)
-    logger.log(logging.DEBUG, 'start')
-    try:
-        # Get strategy
-        module = importlib.import_module(module_name)
-        importlib.reload(module)  # Always reload module in case some changes have been made to the strategies
-        strategy = getattr(module, strategy_name)
-        # Backtest
-        cash = float(params.pop('Cash', 1))
-        for k, v in params.items():
-            params[k] = json.loads(v)
-        pnl, strat = backtest.run(symbols, cash, strategy, **params)
-        pyfoliozer = strat.analyzers.getbyname('pyfolio')
-        returns, _, _, _ = pyfoliozer.get_pf_items()
-        result = json.dumps({
-            'returns': returns.to_json(),
-            'statistic': ots.create_statistic(returns,strat),
-            'title': '{}: {:,.2f}'.format(symbols, pnl)
-        })
-        logger.log(logging.DEBUG, 'done')
-    except Exception as e:
-        logger.log(logging.ERROR, 'Error in starting a backtest: {}'.format(str(e)))
-    logger.removeHandler(fh)
-    logger.removeHandler(rh)
-    return result
+# def create_ts(uid, module_name, strategy_name, symbols, params):
+#     result = []
+#     logger = logging.getLogger()
+#     logger.setLevel(logging.NOTSET)
+#     lfc = LogFileCreator()
+#     fh = logging.FileHandler(lfc.next_file_name())
+#     formatter = logging.Formatter('%(levelname)s - %(message)s')
+#     fh.setFormatter(formatter)
+#     fh.setLevel(logging.NOTSET)
+#     logger.addHandler(fh)
+#     rh = rlog.RedisHandler(channel='l' + uid)
+#     logger.addHandler(rh)
+#     logger.log(logging.DEBUG, 'start')
+#     try:
+#         # Get strategy
+#         module = importlib.import_module(module_name)
+#         importlib.reload(module)  # Always reload module in case some changes have been made to the strategies
+#         strategy = getattr(module, strategy_name)
+#         # Backtest
+#         cash = float(params.pop('Cash', 1))
+#         for k, v in params.items():
+#             params[k] = json.loads(v)
+#         pnl, strat = backtest.run(symbols, cash, strategy, **params)
+#         pyfoliozer = strat.analyzers.getbyname('pyfolio')
+#         returns, _, _, _ = pyfoliozer.get_pf_items()
+#         result = json.dumps({
+#             'returns': returns.to_json(),
+#             'statistic': ots.create_statistic(returns,strat),
+#             'title': '{}: {:,.2f}'.format(symbols, pnl)
+#         })
+#         logger.log(logging.DEBUG, 'done')
+#     except Exception as e:
+#         logger.log(logging.ERROR, 'Error in starting a backtest: {}'.format(str(e)))
+#     logger.removeHandler(fh)
+#     logger.removeHandler(rh)
+#     return result
 
 
 # def extract_figure(json_ts, w, h):

@@ -101,7 +101,7 @@ def register_callbacks(app):
             if value1 is None or value2 is None:
                 return f"Both KEY and Secret are required"
             else: 
-                file_name = 'Alpaca_input_values.json'
+                file_name = 'alpaca_input_values.json'
                 data = {'ALPACA_KEY': value1, 'ALPACA_SECRET': value2}
 
                 file_path = os.path.abspath(file_name)

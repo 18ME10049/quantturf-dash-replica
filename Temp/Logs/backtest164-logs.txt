@@ -1,0 +1,5 @@
+DEBUG - start
+DEBUG - https://paper-api.alpaca.markets:443 "GET /v2/assets/AMZN HTTP/1.1" 200 287
+DEBUG - https://data.alpaca.markets:443 "GET /v2/stocks/AMZN/bars?timeframe=1Day&adjustment=raw&start=2021-06-30T20%3A00%3A00-04%3A00&end=2022-07-10T20%3A00%3A00-04%3A00 HTTP/1.1" 200 None
+DEBUG - https://data.alpaca.markets:443 "GET /v2/stocks/AMZN/bars?timeframe=1Day&adjustment=raw&start=2021-06-30T20%3A00%3A00-04%3A00&end=2021-06-30T23%3A59%3A00-04%3A00 HTTP/1.1" 200 52
+DEBUG - done

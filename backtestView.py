@@ -1,3 +1,4 @@
+import importlib
 from alpaca_trade_api.rest import TimeFrame
 import alpaca_trade_api as tradeapi
 import configuration as oc
@@ -17,11 +18,11 @@ import matplotlib.pyplot as plt
 import pyfolio as pf
 import dash.dependencies
 from plotly.tools import mpl_to_plotly
-from dash.dependencies import Input, Output
+from dash.dependencies import Input, Output, State
 import dash_bootstrap_components as dbc
 from dash import html, dcc, dash_table
 import plotly.express as px
-import datetime as dt
+from datetime import datetime
 import uuid
 import zipfile
 import tempfile
@@ -49,9 +50,9 @@ plt.switch_backend('Agg')
 # from turtle import onclick
 
 with open('G:\Quanturf\quantturf-dash-replica\Alpaca_input_values.json') as infile:
-			data = json.load(infile)
-            
-APCA_API_KEY_ID = data['ALPACA_KEY']#"PKWW7CAGNXC9BD8C1UEW"
+    data = json.load(infile)
+
+APCA_API_KEY_ID = data['ALPACA_KEY']  # "PKWW7CAGNXC9BD8C1UEW"
 APCA_API_SECRET_ID = data['ALPACA_SECRET']
 BASE_URL = "https://paper-api.alpaca.markets"
 
@@ -101,7 +102,7 @@ frequencyList = ['Days', 'Ticks', 'MicroSeconds', 'Seconds',
                  'Minutes', 'Weeks', 'Months', 'Years', 'NoTimeFrame']
 num_marks = 4
 
-all_files = os.listdir("SampleStrategies")
+all_files = os.listdir("MyBacktestStrategies")
 algo_files = list(filter(lambda f: f.endswith('.py'), all_files))
 algo_avlb = [s.rsplit(".", 1)[0] for s in algo_files]
 
@@ -129,38 +130,45 @@ page = html.Div([
                                                         # options=['AAPL', 'TSLA', 'MSFT', 'AMZN'], #Replace this with list
                                                         multi=True, clearable=False)
                                                 ], className='row mb-10'),
-                                                # html.Div([
-                                                #     'Choose Algorithm',
-                                                #     dcc.Dropdown(
-                                                #         id='module-gc1', options=algo_avlb, className='eight columns u-pull-right')
-                                                # ], className='row mb-10'),
+                                                html.Div([
+                                                    'Choose Algorithm',
+                                                    dcc.Dropdown(
+                                                        id='module-gc1', options=algo_avlb, className='eight columns u-pull-right')
+                                                ], className='row mb-10'),
 
-                                               html.Div([
+                                                html.Div([
                                                     # Create a date picker using the dcc.DatePicker component
-													'Select Start Date ',
+                                                    'Select Start Date ',
                                                     dcc.DatePickerSingle(
-        												id='start-date-picker',
-														placeholder='Start Date',
-														display_format='DD/MM/YYYY'
-													),
-													html.Div(id='output-date')
+                                                        id='start-date-picker',
+                                                        placeholder='Start Date',
+                                                        min_date_allowed=datetime(1995, 8, 5),
+                                                        max_date_allowed=datetime.today(),
+                                                        initial_visible_month=datetime.today(),
+                                                        date=str(datetime.today())
+                                                    ),
+                                                    html.Div(id='output-date')
                                                 ],  className='row mb-10'),
 
                                                 html.Div([
                                                     # Create a date picker using the dcc.DatePicker component
-													'Select End Date ',
+                                                    'Select End Date ',
                                                     dcc.DatePickerSingle(
-        												id='end-date-picker',
-														placeholder='End Date',
-														display_format='DD/MM/YYYY'
-													),
-													html.Div(id='output-date')
+                                                        id='end-date-picker',
+                                                        placeholder='End Date',
+                                                        min_date_allowed=datetime(1995, 8, 5),
+                                                        max_date_allowed=datetime.today(),
+                                                        initial_visible_month=datetime.today(),
+                                                        date=str(datetime.today())
+                                                    ),
+                                                    html.Div(id='output-date')
                                                 ],  className='row mb-10'),
 
-												html.Div([
-													'Enter Capital Value:',
-													dcc.Input(id='cash', className='eight columns u-pull-right', value = 10000, style={'margin-left': '10px', 'width': '170px', 'font-size': '15px', 'font-weight': '5', 'border-radius': 5})
-												], className='row mb-10'),
+                                                html.Div([
+                                                    'Enter Capital Value:',
+                                                    dcc.Input(id='cash', className='eight columns u-pull-right', value=10000, style={
+                                                              'margin-left': '10px', 'width': '170px', 'font-size': '15px', 'font-weight': '5', 'border-radius': 5})
+                                                ], className='row mb-10'),
 
                                                 html.Br(),
                                                 html.Button('Run Backtest', id='backtest-btn', className='eight columns u-pull-right', n_clicks=0, style={
@@ -171,36 +179,51 @@ page = html.Div([
                                             ])])
                                 ], color=PRIMARY, style={'border-radius': 10, "width": "12rem"}),
                             html.Br(),
-                            dbc.Card([
-                                dbc.CardHeader('Run Backtest', style={
-                                    'color': DARK_ACCENT}),
-                                dbc.CardBody([
-                                    # Run backtest
-                                    html.Div([
-                                        dcc.Dropdown(
-                                            id='strategy', options=[])
-                                    ]),
-                                    html.Br(),
-                                    html.Button('Run Backtest', id='backtest-btn', className='eight columns u-pull-right', n_clicks=0, style={
-                                        'font-size': '15px', 'font-weight': '5', 'color': PRIMARY, 'background-color': ACCENT, "border-color": ACCENT, 'border-radius': 5}),
+                            html.Div(
+                                id='intermediate-value', style={'display': 'none'}),
+                            html.Div(
+                                id='intermediate-params', style={'display': 'none'}),
+                            html.Div(
+                                id='code-generated', style={'display': 'none'}),
+                            html.Div(
+                                id='code-generated-backtest-2', style={'display': 'none'}),
+                            # dcc.Download(id="download-data-csv"),
+                            html.Div(
+                                id='intermediate-status', style={'display': 'none'}),
+                            html.Div(
+                                id='level-log', contentEditable='True', style={'display': 'none'}),
+                            dcc.Input(
+                                id='log-uid', type='text', style={'display': 'none'})
+                            # dbc.Card([
+                            #     # dbc.CardHeader('Run Backtest', style={
+                            #     #     'color': DARK_ACCENT}),
+                            #     # dbc.CardBody([
+                            #     #     # # Run backtest
+                            #     #     # html.Div([
+                            #     #     #     dcc.Dropdown(
+                            #     #     #         id='strategy', options=[])
+                            #     #     # ]),
+                            #     #     # html.Br(),
+                            #     #     # html.Button('Run Backtest', id='backtest-btn', className='eight columns u-pull-right', n_clicks=0, style={
+                            #     #     #     'font-size': '15px', 'font-weight': '5', 'color': PRIMARY, 'background-color': ACCENT, "border-color": ACCENT, 'border-radius': 5}),
 
-                                    html.Div(
-                                        id='intermediate-value', style={'display': 'none'}),
-                                    html.Div(
-                                        id='intermediate-params', style={'display': 'none'}),
-                                    html.Div(
-                                        id='code-generated', style={'display': 'none'}),
-                                    html.Div(
-                                        id='code-generated-backtest-2', style={'display': 'none'}),
-                                    # dcc.Download(id="download-data-csv"),
-                                    html.Div(
-                                        id='intermediate-status', style={'display': 'none'}),
-                                    html.Div(
-                                        id='level-log', contentEditable='True', style={'display': 'none'}),
-                                    dcc.Input(
-                                        id='log-uid', type='text', style={'display': 'none'})
-                                ])
-                            ], color=PRIMARY, style={'border-radius': 10}),
+                            #     #     # html.Div(
+                            #     #     #     id='intermediate-value', style={'display': 'none'}),
+                            #     #     # html.Div(
+                            #     #     #     id='intermediate-params', style={'display': 'none'}),
+                            #     #     # html.Div(
+                            #     #     #     id='code-generated', style={'display': 'none'}),
+                            #     #     # html.Div(
+                            #     #     #     id='code-generated-backtest-2', style={'display': 'none'}),
+                            #     #     # # dcc.Download(id="download-data-csv"),
+                            #     #     # html.Div(
+                            #     #     #     id='intermediate-status', style={'display': 'none'}),
+                            #     #     # html.Div(
+                            #     #     #     id='level-log', contentEditable='True', style={'display': 'none'}),
+                            #     #     # dcc.Input(
+                            #     #     #     id='log-uid', type='text', style={'display': 'none'})
+                            #     # ])
+                            # ], color=PRIMARY, style={'border-radius': 10}),
                         ], width=2),
                         dbc.Col([
 
@@ -333,6 +356,55 @@ def beautify_plotly(fig):
 
 
 def register_callbacks(app):
+    
+    @app.callback(Output('intermediate-value', 'children'), [Input('backtest-btn', 'n_clicks')])
+    def on_click_backtest_to_intermediate(n_clicks):
+        if n_clicks != 0:
+            try:
+                strategy = "MyStrategy1"
+                result = ob.create_ts2(strategy)
+                return result
+            except json.decoder.JSONDecodeError:
+                # Ignoring this error (this is happening when inputting values in Module/Strategy boxes)
+                return []
+    
+    @app.callback(Output('charts', 'figure'),
+                  [Input('intermediate-value', 'children')], prevent_initial_call=True)
+    def on_intermediate_to_chart(children):
+        # r = redis.StrictRedis(oc.cfg['default']['redis'], 6379, db=0)
+        # size = r.get(uid + 'size')
+        # w, h = size.decode('utf8').split(',')
+        # return ob.extract_figure(children, w, h)
+        if children == None or len(children) == 0:
+            return dash.no_update
+        return ob.extract_figure(children)
+    
+    @app.callback(Output('stat-block', 'children'), [Input('intermediate-value', 'children')])
+    def on_intermediate_to_stat(children):
+        statistic = ob.extract_statistic(children)
+        ht = []
+        for section in statistic:
+            ht.append(html.Div(html.B(section, style={
+                      'font-size': '1.1em', 'line-height': '1.5m'}), className='row'))
+            for stat in statistic[section]:
+                ht.append(
+                    html.Div([
+                        html.Div(children=[html.H6(stat + " = " + str(statistic[section].get(stat)))])
+                        # html.Div(stat, className='u-pull-left'),
+                        # html.Div(html.B(statistic[section].get(
+                        #     stat)), className='u-pull-right')
+                    ], className='row'))
+            ht.append(
+                html.Div(style={'border': '2px solid #999', 'margin': '10px 10px 5px'}))
+        return html.Div(ht[:-1])
+    
+    # @app.callback(Output('strategy', 'options'), [Input('symbols', 'value')])
+    # def update_strategy_list(symbols):
+    #     all_files = os.listdir("MyStrategies")
+    #     backtest_files = list(filter(lambda f: f.endswith('.py'), all_files))
+    #     backtest_avlb = [s.rsplit(".", 1)[0] for s in backtest_files]
+    #     # print(backtest_avlb)
+    #     return backtest_avlb
 
     # @app.server.route('{}<file>'.format(static_route))
     # def serve_file(file):
@@ -341,14 +413,6 @@ def register_callbacks(app):
     #             '"{}" is excluded from the allowed static css files'.format(file))
     #     static_directory = os.path.join(root_directory, 'Static')
     #     return flask.send_from_directory(static_directory, file)
-
-    @app.callback(Output('strategy', 'options'), [Input('symbols', 'value')])
-    def update_strategy_list(symbols):
-        all_files = os.listdir("MyStrategies")
-        backtest_files = list(filter(lambda f: f.endswith('.py'), all_files))
-        backtest_avlb = [s.rsplit(".", 1)[0] for s in backtest_files]
-        # print(backtest_avlb)
-        return backtest_avlb
 
     ####  Run Backtest button #####
 
@@ -374,21 +438,6 @@ def register_callbacks(app):
     # def create_uid(m):
     #     return uuid.uuid4().hex
 
-    # @app.callback(Output('intermediate-value', 'children'), [Input('strategy', 'value'), Input('backtest-btn', 'n_clicks')])
-    # def on_click_backtest_to_intermediate(strategy, n_clicks):
-    #     try:
-    #         if strategy is None:
-    #             return []
-    #         # return ob.create_ts(uid, module, strategy, symbols, params)
-    #         result = ob.create_ts2(strategy)
-    #         #print("result of backtesting....")
-    #         print(result)
-    #         return result
-    #     except json.decoder.JSONDecodeError:
-    #         # Ignoring this error (this is happening when inputting values in Module/Strategy boxes)
-    #         #print("Exception throw ho gya")
-    #         return []
-
     # @app.callback(Output('backtest-btn', 'n_clicks'),
     #               [
     #     #Input('module', 'value'),
@@ -407,175 +456,27 @@ def register_callbacks(app):
 #         Input('backtest-freqeuncy-selected-property', 'value'),
 #         Input('filename', 'value'),
 #     ])
-#     def create_code(n_clicks, symbol, algoName, frequency, fileName):
-#         if n_clicks == 0:
-#             return ''
-
-#         data = data2 = ""
-#         live = False
-#         backTestCode = f"""import alpaca_backtrader_api
-# import backtrader as bt
-# from datetime import datetime
-
-# # Your credentials here
-# ALPACA_API_KEY = "{APCA_API_KEY_ID}"
-# ALPACA_SECRET_KEY = "{APCA_API_SECRET_ID}"
-
-# IS_BACKTEST = True
-# IS_LIVE = False
-# symbol = "{symbol}"
-
-
-# class SmaCross1(bt.Strategy):
-#     def notify_fund(self, cash, value, fundvalue, shares):
-#         super().notify_fund(cash, value, fundvalue, shares)
-
-#     def notify_store(self, msg, *args, **kwargs):
-#         super().notify_store(msg, *args, **kwargs)
-#         self.log(msg)
-
-#     def notify_data(self, data, status, *args, **kwargs):
-#         super().notify_data(data, status, *args, **kwargs)
-#         print('*' * 5, 'DATA NOTIF:', data._getstatusname(status), *args)
-#         if data._getstatusname(status) == "LIVE":
-#             self.live_bars = True
-
-#     # list of parameters which are configurable for the strategy
-#     params = dict(
-#         pfast=10,  # period for the fast moving average
-#         pslow=30   # period for the slow moving average
-#     )
-
-#     def log(self, txt, dt=None):
-#         dt = dt or self.data.datetime[0]
-#         dt = bt.num2date(dt)
-#         print('%s, %s' % (dt.isoformat(), txt))
-
-#     def notify_trade(self, trade):
-#         self.log("placing trade for {{}}. target size: {{}}".format(
-#             trade.getdataname(),
-#             trade.size))
-
-#     def notify_order(self, order):
-#         print(order)
-#         print(f"Order notification. status {{order.getstatusname()}}.")
-
-#     def stop(self):
-#         print('==================================================')
-#         print('Starting Value - %.2f' % self.broker.startingcash)
-#         print('Ending   Value - %.2f' % self.broker.getvalue())
-#         print('==================================================')
-
-#     def __init__(self):
-#         self.live_bars = False
-#         sma1 = bt.ind.SMA(self.data0, period=self.p.pfast)
-#         sma2 = bt.ind.SMA(self.data0, period=self.p.pslow)
-#         self.crossover0 = bt.ind.CrossOver(sma1, sma2)
-
-#     def next(self):
-#         #self.buy(data=data0, size=2)
-#         if not self.live_bars and not IS_BACKTEST:
-#             # only run code if we have live bars (today's bars).
-#             # ignore if we are backtesting
-#             return
-#         # if fast crosses slow to the upside
-#         if not self.positionsbyname[symbol].size and self.crossover0 > 0:
-#             self.buy(data=data0, size=5)  # enter long
-
-#         # in the market & cross to the downside
-#         if self.positionsbyname[symbol].size and self.crossover0 <= 0:
-#             self.close(data=data0)  # close long position
-
-
-# if __name__ == '__main__':
-#     import logging
-#     logging.basicConfig(format='%(asctime)s %(message)s', level=logging.INFO)
-
-#     cerebro = bt.Cerebro()
-#     cerebro.addstrategy(SmaCross1)
-
-#     store = alpaca_backtrader_api.AlpacaStore(
-#         key_id=ALPACA_API_KEY,
-#         secret_key=ALPACA_SECRET_KEY,
-#         paper=not IS_LIVE,
-#     )
-
-#     DataFactory = store.getdata  # or use alpaca_backtrader_api.AlpacaData
-#     if IS_BACKTEST:
-#         data0 = DataFactory(dataname=symbol,
-#                             historical=True,
-#                             fromdate=datetime(2021, 7, 1),
-#                             todate=datetime(2022, 7, 11),
-#                             timeframe=bt.TimeFrame.Days,
-#                             data_feed='iex')
-#     else:
-#         data0 = DataFactory(dataname=symbol,
-#                             historical=False,
-#                             timeframe=bt.TimeFrame.Ticks,
-#                             backfill_start=False,
-#                             data_feed='iex'
-#                             )
-#         # or just alpaca_backtrader_api.AlpacaBroker()
-#         broker = store.getbroker()
-#         cerebro.setbroker(broker)
-#     cerebro.adddata(data0)
-
-#     if IS_BACKTEST:
-#         # backtrader broker set initial simulated cash
-#         cerebro.broker.setcash(100000.0)
-
-#     print('Starting Portfolio Value: {{}}'.format(cerebro.broker.getvalue()))
-#     cerebro.run()
-#     print('Final Portfolio Value: {{}}'.format(cerebro.broker.getvalue()))
-#     cerebro.plot()"""
-#         # .format(APCA_API_KEY_ID = APCA_API_KEY_ID, APCA_API_SECRET_ID = APCA_API_SECRET_ID, live = live, symbol=symbol)
-#         strategy_file = algoName+".py"
-#         strategy_file = "SampleStrategies/"+strategy_file
-
-#         with open(strategy_file) as fp:
-#             data = fp.read()
-
-#         data += "\n"
-#         data = backTestCode
-#         path_dir = "MyBacktestStrategies/"
-#         filename_save = fileName+".py"
-
-#         with open(os.path.join(path_dir, filename_save), 'w') as fp:
-#             fp.write(data)
-
-#         return 0
 
     #####  Download Button #####
 
+    # @app.callback(Output('code-generated2', 'children'),
+    #               [
+    #     Input('download-btn', 'n_clicks'),
+    #     Input('symbols', 'value')
+    # ])
+    # def download_data(n_clicks, symbols):
+    #     if n_clicks == 0:
+    #         return ''
+    #     #symbols = ['TSLA', 'GE']
+    #     print("testing Datas ")
+    #     print(symbols)
+    #     for s in symbols:
+    #         df = yf.download(s, start="2018-01-01")
+    #         data_dir = "Data/"
+    #         filename = s + ".csv"
+    #         df.to_csv(os.path.join(data_dir, filename))
+    #     return 0
 
-    @app.callback(Output('code-generated2', 'children'),
-                  [
-        Input('download-btn', 'n_clicks'),
-        Input('symbols', 'value')
-    ])
-    def download_data(n_clicks, symbols):
-        if n_clicks == 0:
-            return ''
-        #symbols = ['TSLA', 'GE']
-        print("testing Datas ")
-        print(symbols)
-        for s in symbols:
-            df = yf.download(s, start="2018-01-01")
-            data_dir = "Data/"
-            filename = s + ".csv"
-            df.to_csv(os.path.join(data_dir, filename))
-        return 0
-
-    @app.callback(Output('charts', 'figure'),
-                  [Input('intermediate-value', 'children'), Input('log-uid', 'value')], prevent_initial_call=True)
-    def on_intermediate_to_chart(children, uid):
-        # r = redis.StrictRedis(oc.cfg['default']['redis'], 6379, db=0)
-        # size = r.get(uid + 'size')
-        # w, h = size.decode('utf8').split(',')
-        # return ob.extract_figure(children, w, h)
-        if len(children) == 0:
-            return dash.no_update
-        return ob.extract_figure(children)
 
     # Commenting it out for now as there is no level-slider exist.
 
@@ -589,24 +490,6 @@ def register_callbacks(app):
     #         res.append(level_marks[i].upper())
     #     return ','.join(res)
 
-    @app.callback(Output('stat-block', 'children'), [Input('intermediate-value', 'children')])
-    def on_intermediate_to_stat(children):
-        statistic = ob.extract_statistic(children)
-        ht = []
-        for section in statistic:
-            ht.append(html.Div(html.B(section, style={
-                      'font-size': '1.1em', 'line-height': '1.5m'}), className='row'))
-            for stat in statistic[section]:
-                ht.append(
-                    html.Div([
-                        html.Div(stat, className='u-pull-left'),
-                        html.Div(html.B(statistic[section].get(
-                            stat)), className='u-pull-right')
-                    ], className='row'))
-            ht.append(
-                html.Div(style={'border': '1px solid #999', 'margin': '10px 10px 5px'}))
-        return html.Div(html.Div(ht[:-1], className='twelve columns', style={'line-height': '1.4em'}), className='row')
-
     # if not debug_mode:
     #     auth = dash_auth.BasicAuth(
     #         app,
@@ -615,6 +498,150 @@ def register_callbacks(app):
 
 
 key_metrics_df = pd.DataFrame()
+
+def update_code(symbols, cash, strategy):
+    backTestCode =   f"""import alpaca_backtrader_api
+import backtrader as bt
+from datetime import datetime
+
+# Your credentials here
+ALPACA_API_KEY = "{APCA_API_KEY_ID}"
+ALPACA_SECRET_KEY = "{APCA_API_SECRET_ID}"
+
+IS_BACKTEST = True
+IS_LIVE = False
+symbol = "{symbols}"
+
+
+class SmaCross1(bt.Strategy):
+    def notify_fund(self, cash, value, fundvalue, shares):
+        super().notify_fund(cash, value, fundvalue, shares)
+
+    def notify_store(self, msg, *args, **kwargs):
+        super().notify_store(msg, *args, **kwargs)
+        self.log(msg)
+
+    def notify_data(self, data, status, *args, **kwargs):
+        super().notify_data(data, status, *args, **kwargs)
+        print('*' * 5, 'DATA NOTIF:', data._getstatusname(status), *args)
+        if data._getstatusname(status) == "LIVE":
+            self.live_bars = True
+
+    # list of parameters which are configurable for the strategy
+    params = dict(
+        pfast=10,  # period for the fast moving average
+        pslow=30   # period for the slow moving average
+    )
+
+    def log(self, txt, dt=None):
+        dt = dt or self.data.datetime[0]
+        dt = bt.num2date(dt)
+        print('%s, %s' % (dt.isoformat(), txt))
+
+    def notify_trade(self, trade):
+        self.log("placing trade for {{}}. target size: {{}}".format(
+            trade.getdataname(),
+            trade.size))
+
+    def notify_order(self, order):
+        print(order)
+        print(f"Order notification. status {{order.getstatusname()}}.")
+        print(f"Order info. status {{order.info}}.")
+        #print(f'Order - {{order.getordername()}} {{order.ordtypename()}} {{order.getstatusname()}} for {{order.size}} shares @ ${{order.price:.2f}}')
+
+    def stop(self):
+        print('==================================================')
+        print('Starting Value - %.2f' % self.broker.startingcash)
+        print('Ending   Value - %.2f' % self.broker.getvalue())
+        print('==================================================')
+
+    def __init__(self):
+        self.live_bars = False
+        sma1 = bt.ind.SMA(self.data0, period=self.p.pfast)
+        sma2 = bt.ind.SMA(self.data0, period=self.p.pslow)
+        self.crossover0 = bt.ind.CrossOver(sma1, sma2)
+
+    def next(self):
+        #self.buy(data=data0, size=2)
+        if not self.live_bars and not IS_BACKTEST:
+            # only run code if we have live bars (today's bars).
+            # ignore if we are backtesting
+            return
+        # if fast crosses slow to the upside
+        if not self.positionsbyname[symbol].size and self.crossover0 > 0:
+            self.buy(data=self.data0, size=5)  # enter long
+
+        # in the market & cross to the downside
+        if self.positionsbyname[symbol].size and self.crossover0 <= 0:
+            self.close(data=self.data0)  # close long position
+
+
+def runStrategy():
+    import logging
+    logging.basicConfig(format='%(asctime)s %(message)s', level=logging.INFO)
+
+    cerebro = bt.Cerebro()
+
+    store = alpaca_backtrader_api.AlpacaStore(
+        key_id=ALPACA_API_KEY,
+        secret_key=ALPACA_SECRET_KEY,
+        paper=not IS_LIVE,
+    )
+
+    DataFactory = store.getdata  # or use alpaca_backtrader_api.AlpacaData
+    if IS_BACKTEST:
+        data0 = DataFactory(dataname=symbol,
+                            historical=True,
+                            fromdate=datetime(2021, 7, 1),
+                            todate=datetime(2022, 7, 11),
+                            timeframe=bt.TimeFrame.Days,
+                            data_feed='iex')
+    else:
+        data0 = DataFactory(dataname=symbol,
+                            historical=False,
+                            timeframe=bt.TimeFrame.Ticks,
+                            backfill_start=False,
+                            data_feed='iex'
+                            )
+        # or just alpaca_backtrader_api.AlpacaBroker()
+        broker = store.getbroker()
+        cerebro.setbroker(broker)
+    #cerebro.broker.setcash(100000)
+    cerebro.adddata(data0)
+    cerebro.addstrategy(SmaCross1)
+
+    #add Analyzers
+    cerebro.addanalyzer(bt.analyzers.PyFolio, _name='pyfolio')
+    cerebro.addanalyzer(bt.analyzers.DrawDown, _name='drawdown')
+    cerebro.addanalyzer(bt.analyzers.SQN, _name='SQN')
+    cerebro.addanalyzer(bt.analyzers.TradeAnalyzer, _name='trades')
+
+    if IS_BACKTEST:
+        # backtrader broker set initial simulated cash
+        cerebro.broker.setcash({cash})
+
+    print('Starting Portfolio Value: {{}}'.format(cerebro.broker.getvalue()))
+    results = cerebro.run()
+    pnl = cerebro.broker.getvalue() - {cash}
+    print('Final Portfolio Value: {{}}'.format(cerebro.broker.getvalue()))
+    return pnl, results[0]
+    #cerebro.plot()"""
+        #.format(APCA_API_KEY_ID = APCA_API_KEY_ID, APCA_API_SECRET_ID = APCA_API_SECRET_ID, live = live, symbol=symbol)
+            
+            # strategy_file=strategy+".py"
+            # strategy_file = "SampleStrategies/"+strategy_file
+
+            # with open(strategy_file) as fp:
+            #     data = fp.read()
+            # data += "\n"
+
+    data = backTestCode
+    path_dir = "MyBacktestStrategies/"
+    filename_save = strategy+".py"
+
+    with open (os.path.join(path_dir, filename_save), 'w') as fp:
+        fp.write(data)
+    
 
 
 def balance_sheet(symbol):

@@ -6,13 +6,7 @@ from datetime import datetime
 ALPACA_API_KEY = "PKWW7CAGNXC9BD8C1UEW"
 ALPACA_SECRET_KEY = "iMz0aAFKlWrV4PqLKtUIFnJnyjtGthNDXQLoHckY"
 
-"""
-You have 3 options:
- - backtest (IS_BACKTEST=True, IS_LIVE=False)
- - paper trade (IS_BACKTEST=False, IS_LIVE=False)
- - live trade (IS_BACKTEST=False, IS_LIVE=True)
-"""
-IS_BACKTEST = True
+IS_BACKTEST = False
 IS_LIVE = False
 symbol = "AMZN"
 
@@ -50,8 +44,6 @@ class SmaCross1(bt.Strategy):
     def notify_order(self, order):
         print(order)
         print(f"Order notification. status {order.getstatusname()}.")
-        print(f"Order info. status {order.info}.")
-        #print(f'Order - {order.getordername()} {order.ordtypename()} {order.getstatusname()} for {order.size} shares @ ${order.price:.2f}')
 
     def stop(self):
         print('==================================================')
@@ -73,18 +65,19 @@ class SmaCross1(bt.Strategy):
             return
         # if fast crosses slow to the upside
         if not self.positionsbyname[symbol].size and self.crossover0 > 0:
-            self.buy(data=self.data0, size=5)  # enter long
+            self.buy(data=data0, size=5)  # enter long
 
         # in the market & cross to the downside
         if self.positionsbyname[symbol].size and self.crossover0 <= 0:
-            self.close(data=self.data0)  # close long position
+            self.close(data=data0)  # close long position
 
 
-def runStrategy():
+if __name__ == '__main__':
     import logging
     logging.basicConfig(format='%(asctime)s %(message)s', level=logging.INFO)
 
     cerebro = bt.Cerebro()
+    cerebro.addstrategy(SmaCross1)
 
     store = alpaca_backtrader_api.AlpacaStore(
         key_id=ALPACA_API_KEY,
@@ -110,23 +103,13 @@ def runStrategy():
         # or just alpaca_backtrader_api.AlpacaBroker()
         broker = store.getbroker()
         cerebro.setbroker(broker)
-    #cerebro.broker.setcash(100000)
     cerebro.adddata(data0)
-    cerebro.addstrategy(SmaCross1)
-
-    #add Analyzers
-    cerebro.addanalyzer(bt.analyzers.PyFolio, _name='pyfolio')
-    cerebro.addanalyzer(bt.analyzers.DrawDown, _name='drawdown')
-    cerebro.addanalyzer(bt.analyzers.SQN, _name='SQN')
-    cerebro.addanalyzer(bt.analyzers.TradeAnalyzer, _name='trades')
 
     if IS_BACKTEST:
         # backtrader broker set initial simulated cash
         cerebro.broker.setcash(100000.0)
 
     print('Starting Portfolio Value: {}'.format(cerebro.broker.getvalue()))
-    results = cerebro.run()
-    pnl = cerebro.broker.getvalue() - 100000
+    cerebro.run()
     print('Final Portfolio Value: {}'.format(cerebro.broker.getvalue()))
-    return pnl, results[0]
-    #cerebro.plot()
+    cerebro.plot()

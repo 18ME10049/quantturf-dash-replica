@@ -209,7 +209,7 @@ class Alpaca_order:
 def key_metrics():
 
 	def getAlpcaClient():
-		with open('G:\Quanturf\quantturf-dash-replica\Alpaca_input_values.json') as infile:
+		with open('alpaca_input_values.json') as infile:
 			data = json.load(infile)
 		APCA_API_KEY_ID = data['ALPACA_KEY']#"PKWW7CAGNXC9BD8C1UEW"
 		APCA_API_SECRET_ID = data['ALPACA_SECRET']
