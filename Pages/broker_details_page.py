@@ -14,34 +14,29 @@ USER_ALPACA_SECRET = ""
 
 
 trade_type = dbc.Row([html.Div([
-    dcc.Dropdown(['Paper', 'Live'], 'Paper', id='trade-type-dropdown'),
-    html.Div(id='dd-output-container')
-    ], className="mb-3")
+    dcc.Dropdown(['Paper', 'Live'], 'Paper', id='trade-type-dropdown', style={'width': '400px'})
+    ], className="mb-3", style={'display': 'flex', 'justify-content': 'center'})
 ])
 
 
 key_input = dbc.Row([
-        dbc.Label("ALPACA API KEY"
-                , html_for="example-key-row"
-                , width=2),
         dbc.Col(dbc.Input(
                 type="text"
                 , id="example-key-row"
-                , placeholder="ENTER YOUR ALPACA API KEY VALUE"
-            ),width=10,
-        )],className="mb-3"
+                , placeholder="ENTER HERE YOUR ALPACA ACCOUNT API KEY VALUE"
+            ),width=5,
+        )],className="mb-3", style={'display': 'flex', 'justify-content': 'center'}
 )
 
 secret_input = dbc.Row([
-        dbc.Label("ALPACA SECRET KEY", html_for="example-secret-row", width=2),
         dbc.Col(
             dbc.Input(
                 type="text"
                 , id="example-secret-row"
-                , placeholder="ENTER YOUR ALPACA API SECRET VALUE"
+                , placeholder="ENTER HERE YOUR ALPACA ACCOUNT API SECRET VALUE"
                 , maxLength = 80
-            ),width=10
-        )], className="mb-3"
+            ),width=5
+        )], className="mb-3", style={'display': 'flex', 'justify-content': 'center'}
 )
 
 # message = dbc.Row([
@@ -55,25 +50,23 @@ secret_input = dbc.Row([
 #         ], className="mb-3")
 
 def make_layout():
-    broker_form = html.Div([ dbc.Container([
-            dcc.Markdown("Fill Your Broker Details")
-            , html.Br()
-            , dbc.Card(
+    broker_form =  dbc.Container([
+            dbc.Card(
                 dbc.CardBody([
                      dbc.Form([trade_type
                         , key_input
                         , secret_input])
                 ,html.Div(id = 'div-button', children = [
-                    dbc.Button('Submit'
-                    , style={'background-color': '#242324', 'color': '#FAF18F', "border-color":'#242324'}
+                    dbc.Button('Save'
+                    , style={'background-color': '#242324', 'color': '#FAF18F', "border-color":'#242324', 'width': '100px'}
                     , id='button-submit'
                     , n_clicks=0)
-                ]) #end div
+                ], style={'display': 'flex', 'justify-content': 'center'}) #end div
                 ])#end cardbody
             )#end card
-            , html.Br()
-            , html.Br()
-        ])
+            ,html.Div(id='dd-output-container', style={'color': 'red'})
+            # , html.Br()
+            # , html.Br()
         ])
     return broker_form
 
@@ -109,6 +102,6 @@ def register_callbacks(app):
                 with open(file_path, 'w') as f:
                     json.dump(data, f)
 
-                return f"Data Saved{file_path}"
+                return f"Details Saved Successfully"
 
 

@@ -13,7 +13,7 @@ import datetime as dt
 import plotly.express as px
 from dash import html, dcc, dash_table
 import dash_bootstrap_components as dbc
-from dash.dependencies import Input, Output
+from dash.dependencies import Input, Output, State
 
 import plotly.express as px
 from plotly.tools import mpl_to_plotly
@@ -71,26 +71,28 @@ result_df = pd.DataFrame({ 'exchange': exchange_list, 'Symbol': symbol_list})
 symbolList = result_df.Symbol.unique().tolist()
 exchangeList = result_df.exchange.unique().tolist()
 
-# global yf_data
-# yf_data = pd.DataFrame()
-df_dict = {}
+grouped = result_df.groupby('exchange')
+
+# create a dictionary with the categories as keys and the lists of values as values
+df_dict = grouped['Symbol'].apply(list).to_dict()
 
 asset_class = ''
-# get tickers
-sp_tickers = pd.read_csv('Static/Data/sp500_companies.csv', usecols=['Symbol'])
-sp_tickers = sp_tickers['Symbol'].values.tolist()
+
+# # get tickers
+# sp_tickers = pd.read_csv('Static/Data/sp500_companies.csv', usecols=['Symbol'])
+# sp_tickers = sp_tickers['Symbol'].values.tolist()
 
 
-crypto_tickers = pd.read_csv('Static/Data/crypto_tickers.csv', names=['Symbol'])
-crypto_tickers = crypto_tickers['Symbol'].values.tolist()
+# crypto_tickers = pd.read_csv('Static/Data/crypto_tickers.csv', names=['Symbol'])
+# crypto_tickers = crypto_tickers['Symbol'].values.tolist()
 
-fx_countries = pd.read_csv('Static/Data/Foreign_Exchange_Rates.csv')
-fx_countries = fx_countries.replace('ND', np.nan) 
-fx_countries = fx_countries.dropna()
+# fx_countries = pd.read_csv('Static/Data/Foreign_Exchange_Rates.csv')
+# fx_countries = fx_countries.replace('ND', np.nan) 
+# fx_countries = fx_countries.dropna()
 
-country_lst = list(fx_countries.columns[2:])
+# country_lst = list(fx_countries.columns[2:])
 
-equity_df = pd.DataFrame()
+# equity_df = pd.DataFrame()
 
 # get all companies from json file
 # with open('Static/Dropdown Data/companies.json', 'r') as read_file:
@@ -101,11 +103,11 @@ equity_df = pd.DataFrame()
 company_options_list = symbolList
 
 # set asset specific drowdown values
-tickers_dict = {'Equities': company_options_list, 'Crypto': crypto_tickers, 'FX': country_lst, 'Fixed Income': [], 'Commodities': [], 'Sentiment': []}
-names = list(tickers_dict.keys())
-nested_options = tickers_dict[names[0]]
+tickers_dict = df_dict#{'Equities': company_options_list, 'Crypto': crypto_tickers, 'FX': country_lst, 'Fixed Income': [], 'Commodities': [], 'Sentiment': []}
+asset_classes = list(tickers_dict.keys())
+nested_options = tickers_dict[asset_classes[0]]
 
-asset_classes = ['Equities', 'Crypto', 'FX']
+#asset_classes = ['Equities', 'Crypto', 'FX']
 # properties = ['All', 'Open', 'High', 'Low', 'Close', 'Volume']
 properties = ['Day', 'Minute', 'Hour']
 
@@ -192,11 +194,11 @@ def make_layout():
 									),
 									html.Br(),
 									html.Br(),
-									dcc.Dropdown(asset_classes, 'Equities', id='selected-asset-class', style=SEARCH_STYLE, clearable=False, placeholder='Select Asset Class...'),
+									dcc.Dropdown(asset_classes, id='selected-asset-class', style=SEARCH_STYLE, clearable=False, placeholder='Select Asset Class'),
 									html.Br(),
-									dcc.Dropdown(value='AMZN', id='selected-symbol', style=SEARCH_STYLE, clearable=False, placeholder='Select Ticker...'),
+									dcc.Dropdown(id='selected-symbol', style=SEARCH_STYLE, clearable=False, placeholder='Select Ticker'),
 									html.Br(),
-									dcc.Dropdown(properties, 'Day', id='selected-property', style=SEARCH_STYLE, clearable=False, placeholder='Select Property...'),
+									dcc.Dropdown(properties, id='selected-property', style=SEARCH_STYLE, clearable=False, placeholder='Select Frequency'),
 									html.Br(),
 									dcc.Download(id="download-center-stock-csv"),
 									dbc.Button('Download Data', id="center_stock", n_clicks=0, style={'background-color': '#242324', 'color': '#FAF18F', "border-color":'#242324'}),
@@ -424,28 +426,27 @@ def centerStock(symbol, start, end, metric):
 def register_callbacks(app):
 	@app.callback(
 		Output("download-center-stock-csv", "data"),
-		[Input("center_stock", "n_clicks"), Input("center_stock", "children")],
-		prevent_initial_call=True,
+		[Input("center_stock", "n_clicks"), Input("center_stock", "children")]
 	)
 	def func(n_clicks, name):
 		df = df_dict[name]
 		return dcc.send_data_frame(df.to_csv, "finailab_data.csv")
 
-	@app.callback(Output('center-stock', 'figure'), [Input('selected-symbol', 'value'),Input('my-date-picker-range', 'start_date'),
-		Input('my-date-picker-range', 'end_date'), Input('selected-property', 'value')])
-	def send_to_graph(symbol, start, end, metric):
+	@app.callback(Output('center-stock', 'figure'), [Input('selected-property', 'value')], [State('selected-symbol', 'value'),State('my-date-picker-range', 'start_date'),
+		State('my-date-picker-range', 'end_date'), ])
+	def send_to_graph(metric, symbol, start, end):
 		return centerStock(symbol, start, end, metric)
 
 	# adjust dropdown tickers for a given tab
 	@app.callback(Output('selected-symbol', 'options'),
-				[Input('selected-asset-class', 'value')]
-	)
+				[Input('selected-asset-class', 'value')], initial_callbacks=True)
 	def update_dropdown(asset_class):
-		asset_class = asset_class
-		if asset_class == 'Equities':
-			return tickers_dict[asset_class]
-		else:
-			return [{'label': i, 'value': i} for i in tickers_dict[asset_class]]
+		if asset_class is not None:
+			return list(df_dict[asset_class])
+		# if asset_class == 'Equities':
+		# 	return tickers_dict[asset_class]
+		# else:
+		# 	return [{'label': i, 'value': i} for i in tickers_dict[asset_class]]
 
 
 

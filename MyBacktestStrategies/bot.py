@@ -8,7 +8,7 @@ ALPACA_SECRET_KEY = "iMz0aAFKlWrV4PqLKtUIFnJnyjtGthNDXQLoHckY"
 
 IS_BACKTEST = True
 IS_LIVE = False
-symbol = 'AAPL'
+symbol = 'TSLA'
 
 
 class SmaCross1(bt.Strategy):

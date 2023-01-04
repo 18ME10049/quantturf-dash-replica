@@ -1,15 +1,7 @@
-import alpaca_backtrader_api
 import backtrader as bt
-from datetime import datetime
-
-# Your credentials here
-ALPACA_API_KEY = "PKWW7CAGNXC9BD8C1UEW"
-ALPACA_SECRET_KEY = "iMz0aAFKlWrV4PqLKtUIFnJnyjtGthNDXQLoHckY"
-
-IS_BACKTEST = False
-IS_LIVE = False
-symbol = 'AAPL'
-
+IS_BACKTEST = True
+symbol = ""
+data0 = ""
 
 class SmaCross1(bt.Strategy):
     def notify_fund(self, cash, value, fundvalue, shares):
@@ -70,46 +62,3 @@ class SmaCross1(bt.Strategy):
         # in the market & cross to the downside
         if self.positionsbyname[symbol].size and self.crossover0 <= 0:
             self.close(data=data0)  # close long position
-
-
-if __name__ == '__main__':
-    import logging
-    logging.basicConfig(format='%(asctime)s %(message)s', level=logging.INFO)
-
-    cerebro = bt.Cerebro()
-    cerebro.addstrategy(SmaCross1)
-
-    store = alpaca_backtrader_api.AlpacaStore(
-        key_id=ALPACA_API_KEY,
-        secret_key=ALPACA_SECRET_KEY,
-        paper=not IS_LIVE,
-    )
-
-    DataFactory = store.getdata  # or use alpaca_backtrader_api.AlpacaData
-    if IS_BACKTEST:
-        data0 = DataFactory(dataname=symbol,
-                            historical=True,
-                            fromdate=datetime(2021, 7, 1),
-                            todate=datetime(2022, 7, 11),
-                            timeframe=bt.TimeFrame.Days,
-                            data_feed='iex')
-    else:
-        data0 = DataFactory(dataname=symbol,
-                            historical=False,
-                            timeframe=bt.TimeFrame.Ticks,
-                            backfill_start=False,
-                            data_feed='iex'
-                            )
-        # or just alpaca_backtrader_api.AlpacaBroker()
-        broker = store.getbroker()
-        cerebro.setbroker(broker)
-    cerebro.adddata(data0)
-
-    if IS_BACKTEST:
-        # backtrader broker set initial simulated cash
-        cerebro.broker.setcash(100000.0)
-
-    print('Starting Portfolio Value: {}'.format(cerebro.broker.getvalue()))
-    cerebro.run()
-    print('Final Portfolio Value: {}'.format(cerebro.broker.getvalue()))
-    cerebro.plot()

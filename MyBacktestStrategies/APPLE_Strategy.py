@@ -104,7 +104,7 @@ def runStrategy():
         # or just alpaca_backtrader_api.AlpacaBroker()
         broker = store.getbroker()
         cerebro.setbroker(broker)
-    #cerebro.broker.setcash(10000)
+    #cerebro.broker.setcash(120000)
     cerebro.adddata(data0)
     cerebro.addstrategy(SmaCross1)
 
@@ -116,11 +116,11 @@ def runStrategy():
 
     if IS_BACKTEST:
         # backtrader broker set initial simulated cash
-        cerebro.broker.setcash(10000)
+        cerebro.broker.setcash(120000)
 
     print('Starting Portfolio Value: {}'.format(cerebro.broker.getvalue()))
     results = cerebro.run()
-    pnl = cerebro.broker.getvalue() - 10000
+    pnl = cerebro.broker.getvalue() - 120000
     print('Final Portfolio Value: {}'.format(cerebro.broker.getvalue()))
     return pnl, results[0]
     #cerebro.plot()

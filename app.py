@@ -2,6 +2,7 @@ import os
 
 # import dash libraries
 import dash
+#print(dash.__version__)
 from dash import DiskcacheManager, CeleryManager, html, dcc, dash_table
 import plotly.express as px
 from jupyter_dash import JupyterDash
@@ -37,7 +38,7 @@ from Pages import live_trade as liveTrade
 PRIMARY = '#FFFFFF'
 SECONDARY = '#242324'#'#FFFFFF'
 ACCENT = '#242324'#98C1D9'
-SIDEBAR = '#FAF18F'#F7F7F7'
+SIDEBAR = '#fff099'#F7F7F7''#010101'
 
 
 
@@ -80,7 +81,8 @@ background_callback_manager = DiskcacheManager(cache)
 app = dash.Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP], external_scripts=[
     'code.jquery.com/jquery-1.4.2.min.js',
     'cdnjs.cloudflare.com/ajax/libs/socket.io/1.3.5/socket.io.min.js'], 
-    suppress_callback_exceptions=True)
+    suppress_callback_exceptions=True,
+    prevent_initial_callbacks=True)
 
 server = app.server
 
@@ -92,6 +94,7 @@ equity_visuals.register_callbacks(app)
 bt_view.register_callbacks(app)
 gc.register_callbacks(app)
 brokerDetails.register_callbacks(app)
+liveTrade.register_callbacks(app)
 
 # the style arguments for the sidebar. We use position:fixed and a fixed width
 SIDEBAR_STYLE = {
@@ -150,6 +153,8 @@ DATATABLE_STYLE = {
     'backgroundColor': PRIMARY,
 }
 
+LINK_STYLE = {'color': '#242324', ":active": {"color": "#F3D971"}}
+
 # Sticky dash board header
 navbar = dbc.NavbarSimple(
     children=[
@@ -201,7 +206,7 @@ navbar = dbc.NavbarSimple(
         
     ],
     sticky='top',
-    brand='Quanturf - backtesting',
+    brand='Quanturf - Algo Trading',
     id='navbar',
     brand_href='#',
     color=SIDEBAR,
@@ -234,12 +239,12 @@ sidebar = html.Div(
                 #                                                 ]
                 #                 , menu_variant='dark', nav=True, group=True
                 # ),
-                dbc.NavLink('Broker Setup', href='/broker-setup', id='broker-setup-link', style={'color': '#242324'}),
-                dbc.NavLink('Download Data', href='/download-data', id='download-data-link', style={'color': '#242324'}),
-                dbc.NavLink('Generate Code', href='/generate-code', id='generate-code-link', style={'color': '#242324'}),
-                dbc.NavLink('Backtest', href='/backtest', id='backtest-link' ,style={'color': '#242324'}),
-                dbc.NavLink('Live Trade', href='/live-trade', id='live-trade-link', style={'color': '#242324'}),
-                dbc.NavLink('Contact Us', href='/contact-us', id='contact-us-link', style={'color': '#242324'}),
+                dbc.NavLink('Broker Setup', href='/broker-setup', id='broker-setup-link', style=LINK_STYLE),
+                dbc.NavLink('Download Data', href='/download-data', id='download-data-link', style=LINK_STYLE),
+                dbc.NavLink('Generate Code', href='/generate-code', id='generate-code-link', style=LINK_STYLE),
+                dbc.NavLink('Backtest', href='/backtest', id='backtest-link' ,style=LINK_STYLE),
+                dbc.NavLink('Live Trade', href='/live-trade', id='live-trade-link', style=LINK_STYLE),
+                dbc.NavLink('Contact Us', href='/contact-us', id='contact-us-link', style=LINK_STYLE),
                 # dbc.NavLink('Visualizations', href='/equity-visuals', id='equity-visuals-link', className='nav-pills'),
                 # dbc.NavLink('Crypto', href='/crypto', id='crypto-link', className='nav-pills'),
                 # dbc.NavLink('FX', href='/FX', id='FX-link', className='nav-pills'),
@@ -318,16 +323,18 @@ app.layout = html.Div([
     dcc.Location(id='url'),
     navbar,
     sidebar,
-    dcc.Loading(
-        children=[
-            html.Div(
-            [
-                content,
+    content,
+    # dcc.Loading(
+    #     children=[
+    #         html.Div(
+    #         [
+    #             content,
                 
-            ], style={'height': '100vh', 'width': '100vw'}
-        )],
-        type='cube', color = ACCENT
-    )], style={'background-color': PRIMARY})
+    #         ], style={'height': '100vh', 'width': '100vw'}
+    #     )],
+    #     type='circle', color = ACCENT
+    # )
+    ], style={'background-color': PRIMARY, "font-family": "Montserrat, sans-serif"})
 # app.layout = html.Div(
 #     [
 #         dcc.Store(id='side_click'),

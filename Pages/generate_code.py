@@ -49,27 +49,27 @@ ACCENT = '#98C1D9'
 SIDEBAR = '#F7F7F7'
 DARK_ACCENT = '#474747'
 
-today = date.today()
-previous_2 = today-timedelta(days=3)
-previous_1 = today-timedelta(days=2)
+# today = date.today()
+# previous_2 = today-timedelta(days=3)
+# previous_1 = today-timedelta(days=2)
 
-weekday = today.weekday()
+# weekday = today.weekday()
 
-if weekday == 0:
-	previous_2 = today-timedelta(days=4)
-	previous_1 = today-timedelta(days=3)
-if weekday == 1:
-	previous_2 = today-timedelta(days=4)
-	previous_1 = today-timedelta(days=1)
-if weekday == 5:
-	previous_2 = today-timedelta(days=2)
-	previous_1 = today-timedelta(days=1)
-if weekday == 6:
-	previous_2 = today-timedelta(days=3)
-	previous_1 = today-timedelta(days=2)
+# if weekday == 0:
+# 	previous_2 = today-timedelta(days=4)
+# 	previous_1 = today-timedelta(days=3)
+# if weekday == 1:
+# 	previous_2 = today-timedelta(days=4)
+# 	previous_1 = today-timedelta(days=1)
+# if weekday == 5:
+# 	previous_2 = today-timedelta(days=2)
+# 	previous_1 = today-timedelta(days=1)
+# if weekday == 6:
+# 	previous_2 = today-timedelta(days=3)
+# 	previous_1 = today-timedelta(days=2)
 
 paper_live_code_generate = dbc.Col([
-						html.Br(),
+						# html.Br(),
 						dbc.Card(
 							[
 								dbc.CardHeader('Generate Algorithm Code - Backtest/Paper Trade', style={'color': DARK_ACCENT}),
@@ -84,23 +84,26 @@ paper_live_code_generate = dbc.Col([
 								# 	#     className='eight columns u-pull-right')
 								# ], className='row mb-10'),
 								html.Div([
-									'Enter Capital Value:',
+									'Capital Value:',
 									dcc.Input(id='cash', className='eight columns u-pull-right', value = 10000, style={'margin-left': '10px', 'width': '210px', 'font-size': '15px', 'font-weight': '5', 'border-radius': 5})
-								], className='row mb-10'),
+								], className='row mb-10', style={'display': 'flex', 'justify-content': 'center'}),
 								html.Br(),
 								html.Div([
-									'Enter  Frequency:',
+									'Frequency:',
 									dcc.Dropdown(frequencyList, value = 'Days', id='freqeuncy-selected-property', clearable=False, style={'width': '210px', 'border-radius': 5})
-								], className='row mb-10'),
+								], className='row mb-10', style={'display': 'flex', 'justify-content': 'center'}),
 								html.Br(),
 								html.Div([
 									'Strategy Name:',
 									#dcc.Dropdown(id='strategy', options=[], className='eight columns u-pull-right')
 									dcc.Input(id='filename', className='eight columns u-pull-right', value = "MyStrategy", style={'margin-left': '10px', 'width': '210px', 'font-size': '15px', 'font-weight': '5', 'border-radius': 5})
-								], className='row mb-10'),
+								], className='row mb-10', style={'display': 'flex', 'justify-content': 'center'}),
 
 								html.Br(),
-								html.Button('Generate Code', id='Generate-Live-Code', n_clicks=0, className='eight columns u-pull-right', style={'font-size': '15px', 'font-weight': '7px', 'color': '#FAF18F', 'background-color': '#242324', "border-color":'#242324', 'border-radius': 5}),
+								html.Div([
+									html.Button('Generate Code', id='Generate-Live-Code', n_clicks=0, className='eight columns u-pull-right', style={'font-size': '15px', 'font-weight': '7px', 'color': '#FAF18F', 'background-color': '#242324', "border-color":'#242324', 'border-radius': 5, 'width': '150px'}),
+									html.Div(id='code-generation-output', style={'display': 'flex', 'justify-content': 'center'})
+								],className='row mb-10', style={'display': 'flex', 'justify-content': 'center'}),
 							]),], color=PRIMARY, style={'border-radius': 10}
 						),
 						html.Div(id='code-generated-gc', style={'display': 'none'}),
@@ -109,7 +112,7 @@ paper_live_code_generate = dbc.Col([
 
 
 backtest_code_generate = dbc.Col([
-						html.Br(),
+						# html.Br(),
 						dbc.Card(
 							[
 								dbc.CardHeader('Generate Algorithm Code - Backtest', style={'color': DARK_ACCENT}),
@@ -172,7 +175,6 @@ ChooseEquityCard = dbc.Col([ dbc.Card([
 							dbc.CardBody([
 								html.Div([
 									dcc.Dropdown(
-										value='AMZN',
 										id='symbols',
 										options=[{'label': name, 'value': name} for name in company_list],
 										#options=['AAPL', 'TSLA', 'MSFT', 'AMZN'], #Replace this with list
@@ -186,9 +188,10 @@ see_code = dbc.Col([
 							[
 								dbc.CardHeader('See Code', style={'color': DARK_ACCENT}),
 								dbc.CardBody([
-								html.Button('See BackTest Code', id='see-backtest-code', n_clicks=0, style={'font-size': '15px', 'font-weight': '7px', 'color': '#FAF18F', 'background-color': '#242324', "border-color":'#242324', 'border-radius': 5}),
-								html.Button('See Paper Code', id='see-paper-code', n_clicks=0,style={'margin-left': '20px','font-size': '15px', 'font-weight': '7px', 'color': '#FAF18F', 'background-color': '#242324', "border-color":'#242324', 'border-radius': 5}),
-							]),], color=PRIMARY, style={'border-radius': 10}
+								html.Button('See BackTest Code', id='see-backtest-code', n_clicks=0, style={'font-size': '15px', 'font-weight': '7px', 'color': '#FAF18F', 'background-color': '#242324', "border-color":'#242324', 'border-radius': 5, 'width': '150px'}),
+								html.Button('See Paper Code', id='see-paper-code', n_clicks=0,style={'margin-left': '20px','font-size': '15px', 'font-weight': '7px', 'color': '#FAF18F', 'background-color': '#242324', "border-color":'#242324', 'border-radius': 5, 'width': '150px'}),
+							],  style={'display': 'flex', 'justify-content': 'center'}
+							),], color=PRIMARY, style={'border-radius': 10}
 						)
 					], width=4)
 
@@ -198,13 +201,13 @@ def make_layout():
 		dbc.Card(
 			dbc.CardBody([
 				html.Br(),
-				dbc.Row([ChooseEquityCard, dbc.Col([html.Br()], width=1), ChooseAlgoCard]),
+				dbc.Row([ChooseEquityCard, dbc.Col([html.Br()], width=1), ChooseAlgoCard], style={'display': 'flex', 'justify-content': 'center'}),
 				html.Br(),
-				dbc.Row([paper_live_code_generate]),
+				dbc.Row([paper_live_code_generate], style={'display': 'flex', 'justify-content': 'center'}),
 				html.Br(),
-				dbc.Row([see_code]),
+				dbc.Row([see_code], style={'display': 'flex', 'justify-content': 'center'}),
 				html.Br(),
-				html.Div(id='code-container')
+				html.Div(id='code-container', )
 			]),
 		),
 	])
@@ -254,7 +257,7 @@ def register_callbacks(app):
 
 	@app.callback(Output('strategy-gc', 'options'), [Input('symbols', 'value')])
 	def update_strategy_list(symbols):  
-		print("strat called")
+		#print("strat called")
 		all_files = os.listdir("MyStrategies")    
 		backtest_files = list(filter(lambda f: f.endswith('.py'), all_files))
 		backtest_avlb = [s.rsplit( ".", 1 )[ 0 ] for s in backtest_files]  
@@ -269,15 +272,15 @@ def register_callbacks(app):
 	#     return ob.params_list(module_name, strategy_name, symbol)
 
 
-	@app.callback(Output('strategy-gc', 'value'), [Input('strategy-gc', 'options')])
-	def update_strategy_value(options):
-		if len(options):
-			#print(options)
-			return options[0]
-		return ''
+	# @app.callback(Output('strategy-gc', 'value'), [Input('strategy-gc', 'options')])
+	# def update_strategy_value(options):
+	# 	if len(options):
+	# 		#print(options)
+	# 		return options[0]
+	# 	return ''
 
 	#Add code later to make sure that enter cash and symbols
-	@app.callback(Output('code-generated-gc', 'children'),
+	@app.callback(Output('code-generation-output', 'children'),
 				[
 					Input('Generate-Live-Code', 'n_clicks')
 				],
@@ -288,6 +291,8 @@ def register_callbacks(app):
 					State('filename', 'value'),
 				])
 	def create_code(n_clicks, symbol, algoName, cash, frequency, fileName):
+		# print(type(symbol))
+		# print(symbol)
 		if n_clicks == 0:
 			return '' 
 
@@ -302,7 +307,7 @@ ALPACA_SECRET_KEY = "{APCA_API_SECRET_ID}"
 
 IS_BACKTEST = False
 IS_LIVE = False
-symbol = "{symbol}"
+symbol = '{symbol[0]}'
 
 
 class SmaCross1(bt.Strategy):
@@ -433,7 +438,7 @@ ALPACA_SECRET_KEY = "{APCA_API_SECRET_ID}"
 
 IS_BACKTEST = True
 IS_LIVE = False
-symbol = "{symbol}"
+symbol = '{symbol[0]}'
 
 
 class SmaCross1(bt.Strategy):
@@ -469,6 +474,8 @@ class SmaCross1(bt.Strategy):
     def notify_order(self, order):
         print(order)
         print(f"Order notification. status {{order.getstatusname()}}.")
+        print(f"Order info. status {{order.info}}.")
+        #print(f'Order - {{order.getordername()}} {{order.ordtypename()}} {{order.getstatusname()}} for {{order.size}} shares @ ${{order.price:.2f}}')
 
     def stop(self):
         print('==================================================')
@@ -490,19 +497,18 @@ class SmaCross1(bt.Strategy):
             return
         # if fast crosses slow to the upside
         if not self.positionsbyname[symbol].size and self.crossover0 > 0:
-            self.buy(data=data0, size=5)  # enter long
+            self.buy(data=self.data0, size=5)  # enter long
 
         # in the market & cross to the downside
         if self.positionsbyname[symbol].size and self.crossover0 <= 0:
-            self.close(data=data0)  # close long position
+            self.close(data=self.data0)  # close long position
 
 
-if __name__ == '__main__':
+def runStrategy():
     import logging
     logging.basicConfig(format='%(asctime)s %(message)s', level=logging.INFO)
 
     cerebro = bt.Cerebro()
-    cerebro.addstrategy(SmaCross1)
 
     store = alpaca_backtrader_api.AlpacaStore(
         key_id=ALPACA_API_KEY,
@@ -528,16 +534,26 @@ if __name__ == '__main__':
         # or just alpaca_backtrader_api.AlpacaBroker()
         broker = store.getbroker()
         cerebro.setbroker(broker)
+    #cerebro.broker.setcash({cash})
     cerebro.adddata(data0)
+    cerebro.addstrategy(SmaCross1)
+
+    #add Analyzers
+    cerebro.addanalyzer(bt.analyzers.PyFolio, _name='pyfolio')
+    cerebro.addanalyzer(bt.analyzers.DrawDown, _name='drawdown')
+    cerebro.addanalyzer(bt.analyzers.SQN, _name='SQN')
+    cerebro.addanalyzer(bt.analyzers.TradeAnalyzer, _name='trades')
 
     if IS_BACKTEST:
         # backtrader broker set initial simulated cash
         cerebro.broker.setcash({cash})
 
     print('Starting Portfolio Value: {{}}'.format(cerebro.broker.getvalue()))
-    cerebro.run()
+    results = cerebro.run()
+    pnl = cerebro.broker.getvalue() - {cash}
     print('Final Portfolio Value: {{}}'.format(cerebro.broker.getvalue()))
-    cerebro.plot()"""
+    return pnl, results[0]
+    #cerebro.plot()"""
 		#.format(APCA_API_KEY_ID = APCA_API_KEY_ID, APCA_API_SECRET_ID = APCA_API_SECRET_ID, live = live, symbol=symbol)
 		strategy_file=algoName+".py"
 		strategy_file = "SampleStrategies/"+strategy_file
@@ -553,7 +569,7 @@ if __name__ == '__main__':
 		with open (os.path.join(path_dir, filename_save), 'w') as fp:
 			fp.write(data)
 
-		return 0
+		return "Code Generation Done!"
 
 		#####  Download Button #####
 
