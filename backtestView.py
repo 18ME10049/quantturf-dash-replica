@@ -106,13 +106,12 @@ all_files = os.listdir("MyBacktestStrategies")
 algo_files = list(filter(lambda f: f.endswith('.py'), all_files))
 algo_avlb = [s.rsplit(".", 1)[0] for s in algo_files]
 
+
 page = html.Div([
-    dbc.Card(
+            dbc.Card(
                 dbc.CardBody([
-                    html.Br(),
                     dbc.Row([
                         dbc.Col([
-                            html.Br(),
                             dbc.Card(
                                 [
                                     dbc.CardHeader(
@@ -142,10 +141,12 @@ page = html.Div([
                                                     dcc.DatePickerSingle(
                                                         id='start-date-picker',
                                                         placeholder='Start Date',
-                                                        min_date_allowed=datetime(1995, 8, 5),
+                                                        min_date_allowed=datetime(
+                                                            1995, 8, 5),
                                                         max_date_allowed=datetime.today(),
                                                         initial_visible_month=datetime.today(),
-                                                        date=str(datetime.today())
+                                                        date=str(
+                                                            datetime.today())
                                                     ),
                                                     html.Div(id='output-date')
                                                 ],  className='row mb-10'),
@@ -156,10 +157,12 @@ page = html.Div([
                                                     dcc.DatePickerSingle(
                                                         id='end-date-picker',
                                                         placeholder='End Date',
-                                                        min_date_allowed=datetime(1995, 8, 5),
+                                                        min_date_allowed=datetime(
+                                                            1995, 8, 5),
                                                         max_date_allowed=datetime.today(),
                                                         initial_visible_month=datetime.today(),
-                                                        date=str(datetime.today())
+                                                        date=str(
+                                                            datetime.today())
                                                     ),
                                                     html.Div(id='output-date')
                                                 ],  className='row mb-10'),
@@ -194,36 +197,6 @@ page = html.Div([
                                 id='level-log', contentEditable='True', style={'display': 'none'}),
                             dcc.Input(
                                 id='log-uid', type='text', style={'display': 'none'})
-                            # dbc.Card([
-                            #     # dbc.CardHeader('Run Backtest', style={
-                            #     #     'color': DARK_ACCENT}),
-                            #     # dbc.CardBody([
-                            #     #     # # Run backtest
-                            #     #     # html.Div([
-                            #     #     #     dcc.Dropdown(
-                            #     #     #         id='strategy', options=[])
-                            #     #     # ]),
-                            #     #     # html.Br(),
-                            #     #     # html.Button('Run Backtest', id='backtest-btn', className='eight columns u-pull-right', n_clicks=0, style={
-                            #     #     #     'font-size': '15px', 'font-weight': '5', 'color': PRIMARY, 'background-color': ACCENT, "border-color": ACCENT, 'border-radius': 5}),
-
-                            #     #     # html.Div(
-                            #     #     #     id='intermediate-value', style={'display': 'none'}),
-                            #     #     # html.Div(
-                            #     #     #     id='intermediate-params', style={'display': 'none'}),
-                            #     #     # html.Div(
-                            #     #     #     id='code-generated', style={'display': 'none'}),
-                            #     #     # html.Div(
-                            #     #     #     id='code-generated-backtest-2', style={'display': 'none'}),
-                            #     #     # # dcc.Download(id="download-data-csv"),
-                            #     #     # html.Div(
-                            #     #     #     id='intermediate-status', style={'display': 'none'}),
-                            #     #     # html.Div(
-                            #     #     #     id='level-log', contentEditable='True', style={'display': 'none'}),
-                            #     #     # dcc.Input(
-                            #     #     #     id='log-uid', type='text', style={'display': 'none'})
-                            #     # ])
-                            # ], color=PRIMARY, style={'border-radius': 10}),
                         ], width=2),
                         dbc.Col([
 
@@ -254,15 +227,27 @@ page = html.Div([
                             ])
                         ], width=3)
                     ]),
+                    dbc.Row([
+                        html.Div([
+        dash_table.DataTable(
+    id='logs-table',)
+    ])
+                    ]),
                 ])
                 )
-], id='graph-container', style={'margin-bottom': '30rem'}
-)
+], id='graph-container', style={'margin-bottom': '30rem'})
 
 
 def make_layout():
-
     return page
+#     return html.Div([page, html.Div([
+#         dash_table.DataTable(
+#     id='logs-table',
+#     columns=[{'name': col, 'id': col} for col in logs_df.columns],
+#     data=logs_df.to_dict('records'),
+# )
+#     ])])
+
 
 
 PRIMARY = '#FFFFFF'
@@ -356,18 +341,19 @@ def beautify_plotly(fig):
 
 
 def register_callbacks(app):
-    
-    @app.callback(Output('intermediate-value', 'children'), [Input('backtest-btn', 'n_clicks')])
+
+    @app.callback(Output('intermediate-value', 'children'), Output('logs-table', 'data'), [Input('backtest-btn', 'n_clicks')])
     def on_click_backtest_to_intermediate(n_clicks):
         if n_clicks != 0:
             try:
                 strategy = "MyStrategy1"
-                result = ob.create_ts2(strategy)
-                return result
+                result, logs = ob.create_ts2(strategy)
+                logs_df = pd.DataFrame(logs)
+                return result, logs_df.to_dict('records')
             except json.decoder.JSONDecodeError:
                 # Ignoring this error (this is happening when inputting values in Module/Strategy boxes)
                 return []
-    
+
     @app.callback(Output('charts', 'figure'),
                   [Input('intermediate-value', 'children')], prevent_initial_call=True)
     def on_intermediate_to_chart(children):
@@ -378,7 +364,7 @@ def register_callbacks(app):
         if children == None or len(children) == 0:
             return dash.no_update
         return ob.extract_figure(children)
-    
+
     @app.callback(Output('stat-block', 'children'), [Input('intermediate-value', 'children')])
     def on_intermediate_to_stat(children):
         statistic = ob.extract_statistic(children)
@@ -389,7 +375,8 @@ def register_callbacks(app):
             for stat in statistic[section]:
                 ht.append(
                     html.Div([
-                        html.Div(children=[html.H6(stat + " = " + str(statistic[section].get(stat)))])
+                        html.Div(
+                            children=[html.H6(stat + " = " + str(statistic[section].get(stat)))])
                         # html.Div(stat, className='u-pull-left'),
                         # html.Div(html.B(statistic[section].get(
                         #     stat)), className='u-pull-right')
@@ -397,7 +384,7 @@ def register_callbacks(app):
             ht.append(
                 html.Div(style={'border': '2px solid #999', 'margin': '10px 10px 5px'}))
         return html.Div(ht[:-1])
-    
+
     # @app.callback(Output('strategy', 'options'), [Input('symbols', 'value')])
     # def update_strategy_list(symbols):
     #     all_files = os.listdir("MyStrategies")
@@ -477,7 +464,6 @@ def register_callbacks(app):
     #         df.to_csv(os.path.join(data_dir, filename))
     #     return 0
 
-
     # Commenting it out for now as there is no level-slider exist.
 
     # @app.callback(
@@ -499,8 +485,9 @@ def register_callbacks(app):
 
 key_metrics_df = pd.DataFrame()
 
+
 def update_code(symbols, cash, strategy):
-    backTestCode =   f"""import alpaca_backtrader_api
+    backTestCode = f"""import alpaca_backtrader_api
 import backtrader as bt
 from datetime import datetime
 
@@ -626,144 +613,143 @@ def runStrategy():
     print('Final Portfolio Value: {{}}'.format(cerebro.broker.getvalue()))
     return pnl, results[0]
     #cerebro.plot()"""
-        #.format(APCA_API_KEY_ID = APCA_API_KEY_ID, APCA_API_SECRET_ID = APCA_API_SECRET_ID, live = live, symbol=symbol)
-            
-            # strategy_file=strategy+".py"
-            # strategy_file = "SampleStrategies/"+strategy_file
+    # .format(APCA_API_KEY_ID = APCA_API_KEY_ID, APCA_API_SECRET_ID = APCA_API_SECRET_ID, live = live, symbol=symbol)
 
-            # with open(strategy_file) as fp:
-            #     data = fp.read()
-            # data += "\n"
+    # strategy_file=strategy+".py"
+    # strategy_file = "SampleStrategies/"+strategy_file
+
+    # with open(strategy_file) as fp:
+    #     data = fp.read()
+    # data += "\n"
 
     data = backTestCode
     path_dir = "MyBacktestStrategies/"
     filename_save = strategy+".py"
 
-    with open (os.path.join(path_dir, filename_save), 'w') as fp:
+    with open(os.path.join(path_dir, filename_save), 'w') as fp:
         fp.write(data)
-    
 
 
-def balance_sheet(symbol):
+# def balance_sheet(symbol):
 
-    ticker = symbol
-    data = yf.Ticker(ticker)
+#     ticker = symbol
+#     data = yf.Ticker(ticker)
 
-    df = pd.DataFrame(data.balance_sheet).T
+#     df = pd.DataFrame(data.balance_sheet).T
 
-    return html.Div([
-                    dbc.Card(
-                        dbc.CardBody([dash_table.DataTable(df.to_dict('records'), [{'name': i, 'id': i} for i in df.columns],
-                                                           style_data=DATATABLE_STYLE, style_header=DATATABLE_HEADER, style_table={'overflowX': 'auto'})
-                                      ]), color=SECONDARY
-                    ),
-                    ])
-
-
-def eps_trend(symbol):
-
-    ticker = symbol
-    df = si.get_analysts_info(ticker)['EPS Trend'].assign(
-        hack='').set_index('hack')
-    return html.Div([
-        dbc.Card(
-                    dbc.CardBody([dash_table.DataTable(df.to_dict('records'), [{'name': i, 'id': i} for i in df.columns],
-                                                       style_data=DATATABLE_STYLE, style_header=DATATABLE_HEADER, style_table={'overflowX': 'auto'})
-                                  ]), color=SECONDARY
-                    ),
-    ])
+#     return html.Div([
+#                     dbc.Card(
+#                         dbc.CardBody([dash_table.DataTable(df.to_dict('records'), [{'name': i, 'id': i} for i in df.columns],
+#                                                            style_data=DATATABLE_STYLE, style_header=DATATABLE_HEADER, style_table={'overflowX': 'auto'})
+#                                       ]), color=SECONDARY
+#                     ),
+#                     ])
 
 
-def growth_estimates(symbol):
-    ticker = symbol
-    df = si.get_analysts_info(ticker)['Growth Estimates'].assign(
-        hack='').set_index('hack')
-    return html.Div([
-        dbc.Card(
-                    dbc.CardBody([dash_table.DataTable(df.to_dict('records'), [{'name': i, 'id': i} for i in df.columns],
-                                                       style_data=DATATABLE_STYLE, style_header=DATATABLE_HEADER, style_table={'overflowX': 'auto'})
-                                  ]), color=SECONDARY
-                    ),
-    ])
+# def eps_trend(symbol):
+
+#     ticker = symbol
+#     df = si.get_analysts_info(ticker)['EPS Trend'].assign(
+#         hack='').set_index('hack')
+#     return html.Div([
+#         dbc.Card(
+#                     dbc.CardBody([dash_table.DataTable(df.to_dict('records'), [{'name': i, 'id': i} for i in df.columns],
+#                                                        style_data=DATATABLE_STYLE, style_header=DATATABLE_HEADER, style_table={'overflowX': 'auto'})
+#                                   ]), color=SECONDARY
+#                     ),
+#     ])
 
 
-def earnings_estimate(symbol):
-    ticker = symbol
-    df = si.get_analysts_info(ticker)['Earnings Estimate'].assign(
-        hack='').set_index('hack')
-    return html.Div([
-        dbc.Card(
-                    dbc.CardBody([dash_table.DataTable(df.to_dict('records'), [{'name': i, 'id': i} for i in df.columns],
-                                                       style_data=DATATABLE_STYLE, style_header=DATATABLE_HEADER, style_table={'overflowX': 'auto'})
-                                  ]), color=SECONDARY
-                    ),
-    ])
+# def growth_estimates(symbol):
+#     ticker = symbol
+#     df = si.get_analysts_info(ticker)['Growth Estimates'].assign(
+#         hack='').set_index('hack')
+#     return html.Div([
+#         dbc.Card(
+#                     dbc.CardBody([dash_table.DataTable(df.to_dict('records'), [{'name': i, 'id': i} for i in df.columns],
+#                                                        style_data=DATATABLE_STYLE, style_header=DATATABLE_HEADER, style_table={'overflowX': 'auto'})
+#                                   ]), color=SECONDARY
+#                     ),
+#     ])
 
 
-def revenue_estimate(symbol):
-    ticker = symbol
-    df = si.get_analysts_info(ticker)['Revenue Estimate'].assign(
-        hack='').set_index('hack')
-    return html.Div([
-        dbc.Card(
-                    dbc.CardBody([dash_table.DataTable(df.to_dict('records'), [{'name': i, 'id': i} for i in df.columns],
-                                                       style_data=DATATABLE_STYLE, style_header=DATATABLE_HEADER, style_table={'overflowX': 'auto'})
-                                  ]), color=SECONDARY
-                    ),
-    ])
+# def earnings_estimate(symbol):
+#     ticker = symbol
+#     df = si.get_analysts_info(ticker)['Earnings Estimate'].assign(
+#         hack='').set_index('hack')
+#     return html.Div([
+#         dbc.Card(
+#                     dbc.CardBody([dash_table.DataTable(df.to_dict('records'), [{'name': i, 'id': i} for i in df.columns],
+#                                                        style_data=DATATABLE_STYLE, style_header=DATATABLE_HEADER, style_table={'overflowX': 'auto'})
+#                                   ]), color=SECONDARY
+#                     ),
+#     ])
 
 
-def earnings_history(symbol):
-    ticker = symbol
-    df = si.get_analysts_info(ticker)['Earnings History'].assign(
-        hack='').set_index('hack')
-    return html.Div([
-        dbc.Card(
-                    dbc.CardBody([dash_table.DataTable(df.to_dict('records'), [{'name': i, 'id': i} for i in df.columns],
-                                                       style_data=DATATABLE_STYLE, style_header=DATATABLE_HEADER, style_table={'overflowX': 'auto'})
-                                  ]), color=SECONDARY
-                    ),
-    ])
+# def revenue_estimate(symbol):
+#     ticker = symbol
+#     df = si.get_analysts_info(ticker)['Revenue Estimate'].assign(
+#         hack='').set_index('hack')
+#     return html.Div([
+#         dbc.Card(
+#                     dbc.CardBody([dash_table.DataTable(df.to_dict('records'), [{'name': i, 'id': i} for i in df.columns],
+#                                                        style_data=DATATABLE_STYLE, style_header=DATATABLE_HEADER, style_table={'overflowX': 'auto'})
+#                                   ]), color=SECONDARY
+#                     ),
+#     ])
 
 
-def eps_revisions(symbol):
-    ticker = symbol
-    df = si.get_analysts_info(ticker)['EPS Revisions'].assign(
-        hack='').set_index('hack')
-    return html.Div([
-        dbc.Card(
-                    dbc.CardBody([dash_table.DataTable(df.to_dict('records'), [{'name': i, 'id': i} for i in df.columns],
-                                                       style_data=DATATABLE_STYLE, style_header=DATATABLE_HEADER, style_table={'overflowX': 'auto'})
-                                  ]), color=SECONDARY
-                    ),
-    ])
+# def earnings_history(symbol):
+#     ticker = symbol
+#     df = si.get_analysts_info(ticker)['Earnings History'].assign(
+#         hack='').set_index('hack')
+#     return html.Div([
+#         dbc.Card(
+#                     dbc.CardBody([dash_table.DataTable(df.to_dict('records'), [{'name': i, 'id': i} for i in df.columns],
+#                                                        style_data=DATATABLE_STYLE, style_header=DATATABLE_HEADER, style_table={'overflowX': 'auto'})
+#                                   ]), color=SECONDARY
+#                     ),
+#     ])
 
 
-def income_statement(symbol):
-
-    ticker = symbol
-    data = yf.Ticker(ticker)
-
-    df = pd.DataFrame(data.financials).T
-    return html.Div([
-                    dbc.Card(
-                        dbc.CardBody([dash_table.DataTable(df.to_dict('records'), [{'name': i, 'id': i} for i in df.columns],
-                                                           style_data=DATATABLE_STYLE, style_header=DATATABLE_HEADER, style_table={'overflowX': 'auto'})
-                                      ]), color=SECONDARY
-                    ),
-                    ])
+# def eps_revisions(symbol):
+#     ticker = symbol
+#     df = si.get_analysts_info(ticker)['EPS Revisions'].assign(
+#         hack='').set_index('hack')
+#     return html.Div([
+#         dbc.Card(
+#                     dbc.CardBody([dash_table.DataTable(df.to_dict('records'), [{'name': i, 'id': i} for i in df.columns],
+#                                                        style_data=DATATABLE_STYLE, style_header=DATATABLE_HEADER, style_table={'overflowX': 'auto'})
+#                                   ]), color=SECONDARY
+#                     ),
+#     ])
 
 
-def cash_flows(symbol):
+# def income_statement(symbol):
 
-    ticker = symbol
-    data = yf.Ticker(ticker)
+#     ticker = symbol
+#     data = yf.Ticker(ticker)
 
-    df = pd.DataFrame(data.cashflow).T
-    return html.Div([
-                    dbc.Card(
-                        dbc.CardBody([dash_table.DataTable(df.to_dict('records'), [{'name': i, 'id': i} for i in df.columns],
-                                                           style_data=DATATABLE_STYLE, style_header=DATATABLE_HEADER, style_table={'overflowX': 'auto'})
-                                      ]), color=SECONDARY
-                    ),
-                    ])
+#     df = pd.DataFrame(data.financials).T
+#     return html.Div([
+#                     dbc.Card(
+#                         dbc.CardBody([dash_table.DataTable(df.to_dict('records'), [{'name': i, 'id': i} for i in df.columns],
+#                                                            style_data=DATATABLE_STYLE, style_header=DATATABLE_HEADER, style_table={'overflowX': 'auto'})
+#                                       ]), color=SECONDARY
+#                     ),
+#                     ])
+
+
+# def cash_flows(symbol):
+
+#     ticker = symbol
+#     data = yf.Ticker(ticker)
+
+#     df = pd.DataFrame(data.cashflow).T
+#     return html.Div([
+#                     dbc.Card(
+#                         dbc.CardBody([dash_table.DataTable(df.to_dict('records'), [{'name': i, 'id': i} for i in df.columns],
+#                                                            style_data=DATATABLE_STYLE, style_header=DATATABLE_HEADER, style_table={'overflowX': 'auto'})
+#                                       ]), color=SECONDARY
+#                     ),
+#                     ])

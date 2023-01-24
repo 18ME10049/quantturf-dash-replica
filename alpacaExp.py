@@ -1,3 +1,4 @@
+#This file is only for testing out python not used in this app. 
 
 import json
 import alpaca_trade_api as tradeapi

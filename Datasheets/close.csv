@@ -1,2 +1,2 @@
-Symbol,selling_qty,Avg_selling_Price,Avg_buying_cost,Avg_holding_period_days,Sell_time,Profit_per_unit,Total Profit,Winning_bet?
-GOOG,4,98.21,98.22,0,2022-11-25 14:53:39.912398+00:00,-0.01,-0.04,False
+Order_Id,Symbol,selling_qty,Avg_selling_Price,Avg_buying_cost,Profit_per_unit,Total Profit,Sell_time,Winning_bet?
+eef4d78b-a0f0-49d5-b999-8f4134246a5b,GOOG,4,98.21,98.22,-0.02,-0.08,2022-11-25 14:53:39.912398+00:00,False

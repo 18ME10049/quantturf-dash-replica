@@ -89,12 +89,12 @@ server = app.server
 server.wsgi_app = WhiteNoise(server.wsgi_app, root='Static/')
 # server.wsgi_app = WhiteNoise(server.wsgi_app, root='assets/')
 
-eq.register_callbacks(app)
-equity_visuals.register_callbacks(app)
-bt_view.register_callbacks(app)
-gc.register_callbacks(app)
-brokerDetails.register_callbacks(app)
-liveTrade.register_callbacks(app)
+brokerDetails.register_callbacks(app) #broker setup page
+eq.register_callbacks(app) # download data page by-default home page.
+#equity_visuals.register_callbacks(app)
+gc.register_callbacks(app) #generate code page
+bt_view.register_callbacks(app) #backtesting page
+liveTrade.register_callbacks(app) #live trading page 
 
 # the style arguments for the sidebar. We use position:fixed and a fixed width
 SIDEBAR_STYLE = {
@@ -213,20 +213,7 @@ navbar = dbc.NavbarSimple(
     dark=True,
     fluid=True,
 )
-# today = date.today()
 
-# offset = max(1, (today.weekday() + 6) % 7 - 3)
-# timedlt1 = timedelta(offset)
-
-# most_recent = today - timedlt1
-
-# offset = max(1, (today.weekday() + 7) % 7 - 3)
-# timedlt1 = timedelta(offset)
-
-# second_most_recent = today - timedlt1
-
-# date_object = datetime.strptime(str(most_recent), '%Y-%m-%d %H:%M:%S')
-# sidebar, including input for content window
 sidebar = html.Div(
     [
         html.Br(),

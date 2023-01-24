@@ -255,14 +255,14 @@ def register_callbacks(app):
 	#     data = ob.test_list(module_name)
 	#     return [{'label': name, 'value': name} for name in data]
 
-	@app.callback(Output('strategy-gc', 'options'), [Input('symbols', 'value')])
-	def update_strategy_list(symbols):  
-		#print("strat called")
-		all_files = os.listdir("MyStrategies")    
-		backtest_files = list(filter(lambda f: f.endswith('.py'), all_files))
-		backtest_avlb = [s.rsplit( ".", 1 )[ 0 ] for s in backtest_files]  
-		#print(backtest_avlb) 
-		return backtest_avlb
+	# @app.callback(Output('strategy-gc', 'options'), [Input('symbols', 'value')])
+	# def update_strategy_list(symbols):  
+	# 	#print("strat called")
+	# 	all_files = os.listdir("MyStrategies")    
+	# 	backtest_files = list(filter(lambda f: f.endswith('.py'), all_files))
+	# 	backtest_avlb = [s.rsplit( ".", 1 )[ 0 ] for s in backtest_files]  
+	# 	#print(backtest_avlb) 
+	# 	return backtest_avlb
 
 	# I think this callback is not needed. No html tag with id = 'params-table' is there
 	# Commenting out it for now.

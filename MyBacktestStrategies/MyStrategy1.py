@@ -6,6 +6,9 @@ from datetime import datetime
 ALPACA_API_KEY = "PKWW7CAGNXC9BD8C1UEW"
 ALPACA_SECRET_KEY = "iMz0aAFKlWrV4PqLKtUIFnJnyjtGthNDXQLoHckY"
 
+logs = []
+
+
 """
 You have 3 options:
  - backtest (IS_BACKTEST=True, IS_LIVE=False)
@@ -40,7 +43,8 @@ class SmaCross1(bt.Strategy):
     def log(self, txt, dt=None):
         dt = dt or self.data.datetime[0]
         dt = bt.num2date(dt)
-        print('%s, %s' % (dt.isoformat(), txt))
+        logs.append({'timestamp': dt.isoformat(), 'level': 'info', 'message': txt})
+        #print(message)
 
     def notify_trade(self, trade):
         self.log("placing trade for {}. target size: {}".format(
@@ -48,16 +52,16 @@ class SmaCross1(bt.Strategy):
             trade.size))
 
     def notify_order(self, order):
-        print(order)
-        print(f"Order notification. status {order.getstatusname()}.")
-        print(f"Order info. status {order.info}.")
+        #print(order)
+        self.log(f"Order notification. status {order.getstatusname()}.")
+        self.log(f"Order info. status {order.info}.")
         #print(f'Order - {order.getordername()} {order.ordtypename()} {order.getstatusname()} for {order.size} shares @ ${order.price:.2f}')
 
     def stop(self):
-        print('==================================================')
-        print('Starting Value - %.2f' % self.broker.startingcash)
-        print('Ending   Value - %.2f' % self.broker.getvalue())
-        print('==================================================')
+        self.log('==================================================')
+        self.log('Starting Value - %.2f' % self.broker.startingcash)
+        self.log('Ending   Value - %.2f' % self.broker.getvalue())
+        self.log('==================================================')
 
     def __init__(self):
         self.live_bars = False
@@ -128,5 +132,5 @@ def runStrategy():
     results = cerebro.run()
     pnl = cerebro.broker.getvalue() - 100000
     print('Final Portfolio Value: {}'.format(cerebro.broker.getvalue()))
-    return pnl, results[0]
+    return pnl, results[0], logs
     #cerebro.plot()

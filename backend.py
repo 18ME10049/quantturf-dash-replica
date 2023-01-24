@@ -111,7 +111,7 @@ def create_ts2(strategy):
 
         module_name = "MyBacktestStrategies."+"MyStrategy1"
         currentStrategy =  importlib.import_module(module_name)
-        pnl, strat = currentStrategy.runStrategy() #Check for the issues??    
+        pnl, strat, logs = currentStrategy.runStrategy() #Check for the issues??    
         # pnl, strat = backtest.run(symbols, cash, strategy, **params)
         pyfoliozer = strat.analyzers.getbyname('pyfolio')
         returns, _, _, _ = pyfoliozer.get_pf_items()
@@ -125,7 +125,7 @@ def create_ts2(strategy):
         logger.log(logging.ERROR, 'Error in starting a backtest: {}'.format(str(e)))
     logger.removeHandler(fh)
     #logger.removeHandler(rh)
-    return result
+    return result, logs
     
 
 # def create_ts(uid, module_name, strategy_name, symbols, params):

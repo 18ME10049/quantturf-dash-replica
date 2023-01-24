@@ -260,7 +260,7 @@ def get_orderids():
 
 
 def get_transactions_details_of_given_orderids_for_a_strategy(api, order_ids):
-    result = api.list_orders(status='closed', limit=102)
+    result = api.list_orders(status='closed', limit=500)
     result_df = pd.DataFrame()
 
     #print(result[0]) # cum_qty, price, symbol, transaction_time
@@ -298,100 +298,78 @@ def get_transactions_details_of_given_orderids_for_a_strategy(api, order_ids):
 
 def realized_profit_df_strategy(api, order_ids):
 
-    result_df = get_transactions_details_of_given_orderids_for_a_strategy(
-        api, order_ids)
+    result = api.list_orders(status='closed', limit=500)#api.get_activities()
 
-    df_buy = result_df[result_df.Type == 'buy']
+   # result_df = pd.DataFrame(columns = ['Order_Id','Symbol', 'Qty','Price', 'RealisedPL_Per_Unit', 'Total_RealisedPL','Transaction_Time'])
 
-    df_sell = result_df[result_df.Type == 'sell']
+    buy_and_sell_order_list = []
+    # buy_order_list = []
 
-    df = pd.merge(df_buy, df_sell, on='Symbol',
-                  how='right', suffixes=['_buy', '_sell'])
-    # All the symbols which have only buy go to the unrealized list --- Those who have sell may belong to realised and un_realised profit.
-    df_unrealized = result_df[~result_df['Symbol'].isin(
-        df_sell.Symbol.unique())]
-    # print(df_unrealized)
+    for res in result:
+        if (res.client_order_id in order_ids):
+            # buy_order_list.append(Alpaca_order(res.client_order_id, float(res.filled_avg_price), int(res.filled_qty), res.side, res.symbol, res.qty, res.updated_at, res.status))
+            buy_and_sell_order_list.append(Alpaca_order(res.client_order_id, float(res.filled_avg_price), int(res.filled_qty), res.side, res.symbol, res.qty, res.updated_at, res.status))
+    
+    #Lists to create a dataframe for sell_orders_profits_and_loss
+    order_id_list = []
+    qty_list = []
+    price_list = []
+    cost_price_list = []
+    symbol_list = []
+    transaction_time_list = []
+    type_list = []
+    realised_profit_per_unit = []
+    total_realised_profit = []
 
-    # All sell order sorted by transection time.
-    testing = df_sell.sort_values(by='Transaction_time')
+    last_unsold_buy_order_index = len(buy_and_sell_order_list)-1
 
-    # testing['Price'] = testing.Price.astype('float') #Convert to Float Type.
-    # df_buy['Price'] = df_buy.Price.astype('float')   #Convert to Float Type.
-    convert_dict = {'Price': float}
-
-    testing = testing.astype(convert_dict)
-    df_buy = df_buy.astype(convert_dict)
-
-    # output_frame = pd.DataFrame(columns = ['sell_order_id','Symbol', 'selling_qty','Avg_selling_Price','Avg_buying_cost','Avg_holding_period',
-    #                              'Earliest_buy_time','Latest_buy_time','Sell_time','Profit_per_unit','Total Profit', 'Winning_bet?'])
-
-    output_frame = pd.DataFrame(columns=['Symbol', 'selling_qty', 'Avg_selling_Price', 'Avg_buying_cost', 'Avg_holding_period_days', 'Sell_time',
-                                         'Profit_per_unit', 'Total Profit', 'Winning_bet?'])
-
-    for sym in testing.Symbol.unique():
-        buy = df_buy.loc[df_buy.Symbol == sym] 
-        sell = testing.loc[testing.Symbol == sym]
-        # print("This is sell")
-        # print(sell)
-
-        obs = []  # completed sell\'s index
-        # iterating for every i = 0,1,2... and row as pandas series.
-        for i, row in sell.iterrows():
-            output_dic = {}
-            if i not in obs:
-                # get all buy order that are made before a sell order (row) is made.
-                out = buy.loc[(buy.Transaction_time < row.Transaction_time)]
-                # print("This is out")
-                # print(out)
-                idx = [j for j in out.index if j not in obs]
-                # print("index operation list",idx)
-                # These orders are not yet used to calculate realised profit
-                out = out.loc[idx]
-                # print("this is out after indexing removal ")
-                # print(out)
-                # print("Printing shape of out.shape[0] ")
-                # print(out.shape[0])
-                # assert out.shape[0] == int(row.Qty) #Match the quantity => this is not a good assert here we need to check if the total quantity bought is >= total quantity sold.
-
-                # [buy, buy, buy, buy, sell, buy, buy, buy, sell, sell, buy]
-                # [2,   2,    2,   2,   4,    2,   2,  2,    5,     3,   2]
-
-                # Avg_cost
-                # print(row.Price - out.groupby('Symbol').Price.mean())
-                # print(row.Transaction_time - out.groupby('Symbol').Transaction_time.mean())
-                output_dict = {
-                    # 'sell_order_id':row.order_id,
-                    'Symbol': sym,
-                    # Quantity of the sold stocks,
-                    'selling_qty': int(row.Qty),
-                    'Avg_selling_Price': row.Price,
-                    # Average Price before this sell is done.
-                    'Avg_buying_cost': round(out.groupby('Symbol').Price.mean()[0], 2),
-                    'Avg_holding_period_days': (row.Transaction_time - out.groupby('Symbol').Transaction_time.mean()[0]),
-                    #    'Earliest_buy_time': out.groupby('Symbol').Transaction_time.min()[0],
-                    #    'Latest_buy_time': out.groupby('Symbol').Transaction_time.max()[0],
-                    'Sell_time': row.Transaction_time,
-                    'Profit_per_unit': round(row.Price - out.groupby('Symbol').Price.mean()[0], 2),
-                    'Total Profit': round((row.Price - out.groupby('Symbol').Price.mean())[0] * int(row.Qty), 2),
-                    'Winning_bet?': True if round(row.Price - out.groupby('Symbol').Price.mean()[0], 2) > 0 else False}
-                output_frame = output_frame.append(
-                    output_dict, ignore_index=True)
-
-                if len(idx) > 1:
-                    for ix in idx:
-                        obs.append(ix)
+    for current_order in reversed(buy_and_sell_order_list):
+        if current_order.side == 'sell':
+            current_sold_qty = current_order.filled_qty
+            buy_order_qty = 0
+            buy_order_average_cost_price = 0.0
+            while last_unsold_buy_order_index >= 0:
+                current_buy_order_qty = buy_order_qty + buy_and_sell_order_list[last_unsold_buy_order_index].filled_qty
+                if current_buy_order_qty >= current_sold_qty:
+                    buy_order_average_cost_price += (current_sold_qty - buy_order_qty) * buy_and_sell_order_list[last_unsold_buy_order_index].filled_avg_price
+                    if current_buy_order_qty != current_sold_qty:
+                        buy_and_sell_order_list[last_unsold_buy_order_index].filled_qty = current_buy_order_qty - current_sold_qty
+                    break
                 else:
-                    obs.append(idx[0])
+                    buy_order_average_cost_price += (buy_and_sell_order_list[last_unsold_buy_order_index].filled_qty) * buy_and_sell_order_list[last_unsold_buy_order_index].filled_avg_price
+                    buy_order_qty = current_buy_order_qty
+                    last_unsold_buy_order_index -= 1
+            
+            buy_order_average_cost_price = buy_order_average_cost_price / current_sold_qty
 
-    # output_frame = output_frame.sort_values('Sell_time', ascending = False)
-    output_frame['Avg_holding_period_days'] = output_frame['Avg_holding_period_days'].apply(
-        lambda x: x.days)
+            order_id_list.append(current_order.client_order_id)
+            qty_list.append(current_order.filled_qty)
+            price_list.append(current_order.filled_avg_price)
+            symbol_list.append(current_order.symbol)
+            transaction_time_list.append(current_order.updated_at)
+            cost_price_list.append(round(buy_order_average_cost_price,2))
+            realised_profit_per_unit.append(round(current_order.filled_avg_price-buy_order_average_cost_price, 2))
+            total_realised_profit.append(round(qty_list[-1]*realised_profit_per_unit[-1],2))
 
-    return output_frame
+
+    WinningBetList = [item > 0 for item in realised_profit_per_unit]
+
+    result_df = pd.DataFrame({
+        'Order_Id':order_id_list,
+        'Symbol': symbol_list,
+        'selling_qty': qty_list, 
+        'Avg_selling_Price': price_list,
+        'Avg_buying_cost': cost_price_list,
+        'Profit_per_unit': realised_profit_per_unit,
+        'Total Profit': total_realised_profit, 
+        'Sell_time': transaction_time_list,
+        'Winning_bet?': WinningBetList})
+
+    return result_df
 
 
 def get_all_open_transactions_unrealised_profit(api, order_ids):
-    result = api.list_orders(status='closed', limit=102)#api.get_activities()
+    result = api.list_orders(status='closed', limit=500)#api.get_activities()
 
     result_df = pd.DataFrame()
 
@@ -466,7 +444,7 @@ def get_all_open_transactions_unrealised_profit(api, order_ids):
         'Unrealised_Profit_Per_Unit': unrealised_profit_per_unit,
         'Total_Unrealised_Profit': total_unrealised_profit, 
         'Transaction_Time': transaction_time_list})
-
+    result_df['Transaction_Time'] = pd.to_datetime(result_df['Transaction_Time'])
     return result_df
 
 
@@ -479,6 +457,7 @@ def get_pnl_df_strategy(open_positions, close_positions):
 
     # Close
     df_copy_close = close_positions.copy()
+    df_copy_close['Sell_time'] = pd.to_datetime(df_copy_close['Sell_time'])
     df_copy_close['date'] = df_copy_close['Sell_time'].dt.date
     realized_pnl_df = df_copy_close.groupby(
         'date')['Total Profit'].sum().reset_index()
@@ -532,7 +511,10 @@ def top_stats():
     except Exception:
         yes_count = 0
     total_count = len(closedf['Winning_bet?'])
-    Win_Rate = (yes_count / total_count) * 100
+    if total_count == 0:
+        Win_Rate = 0
+    else:    
+        Win_Rate = (yes_count / total_count) * 100
     return [
         Dollar_Pnl,
         Return,
